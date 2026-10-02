@@ -41,6 +41,8 @@ def remplazar(raiz):
         raiz.der, aux = remplazar(raiz.der)
     return raiz, aux
 def por_nivel(raiz):
+    if raiz is None:
+        return
     pendientes = Cola()
     arribo(pendientes, raiz)
     while not cola_vacia(pendientes):

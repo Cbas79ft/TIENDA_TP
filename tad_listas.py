@@ -82,6 +82,8 @@ def lista_vacia(lista):
     return lista.inicio is None
 def eliminar(lista, clave):
     dato = None
+    if lista.inicio is None:
+        return dato
     if(lista.inicio.info == clave):
         dato = lista.inicio.info
         lista.inicio = lista.inicio.sig
@@ -141,6 +143,8 @@ def buscar1(lista, buscado, campo=None):
     return aux
 def eliminar1(lista, clave, campo=None):
     dato = None
+    if lista.inicio is None:
+        return dato
     if (criterio(lista.inicio.info, campo) == criterio(clave, campo)):
         dato = lista.inicio.info
         lista.inicio = lista.inicio.sig
