@@ -11,9 +11,8 @@ cursor.executescript(
     """
 PRAGMA foreign_keys = ON;
 
--- ============================================================
+
 -- TABLA: CLIENTES
--- ============================================================
 
 CREATE TABLE clientes (
     id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,9 +22,7 @@ CREATE TABLE clientes (
 );
 
 
--- ============================================================
 -- TABLA: PRODUCTOS
--- ============================================================
 
 CREATE TABLE productos (
     id_producto INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,10 +35,9 @@ CREATE TABLE productos (
 );
 
 
--- ============================================================
+
 -- TABLA: ESPERA
 -- Clientes que esperan la reposición de un producto
--- ============================================================
 
 CREATE TABLE esperas (
     id_espera INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,10 +53,8 @@ CREATE TABLE esperas (
 );
 
 
--- ============================================================
 -- TABLA: TRANSACCIONES
 -- Una transacción representa una compra
--- ============================================================
 
 CREATE TABLE transacciones (
     id_transaccion INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,10 +69,9 @@ CREATE TABLE transacciones (
 );
 
 
--- ============================================================
+
 -- TABLA: DETALLE_TRANSACCION
 -- Productos incluidos en cada compra
--- ============================================================
 
 CREATE TABLE detalle_transaccion (
     id_detalle INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,6 +121,22 @@ productos_nuevos = [
 cursor.executemany(
     "INSERT INTO productos (nombre, cantidad_disponible, precio) VALUES (?, ?, ?)",
     productos_nuevos,
+)
+
+
+
+ingreso_clientes = [
+    ('Sebastian', 'Trujillo', 'strujillo@gmail.com'),
+    ('Agustin', 'Sanoguera', 'aesanoguera@gmail.com'),
+    ('Carlos', 'Rodríguez', 'carlos.rodriguez@example.com'),
+    ('Lucía', 'Fernández', 'lucia.fernandez@example.com'),
+    ('Martín', 'López', 'martin.lopez@example.com'),
+    
+]
+
+cursor.executemany(
+    "INSERT INTO clientes (nombre, apellido, email) VALUES (?, ?, ?)",
+    ingreso_clientes,
 )
 
 # 5. Guardar los datos y cerrar la conexión
