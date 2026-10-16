@@ -1,18 +1,10 @@
 """Conexión a SQLite y operaciones de persistencia de productos."""
 
 import sqlite3
-import os
-
-RUTA_BD = os.path.join(os.path.dirname(__file__), "tablas.db")
-
-def conectar():
-    """
-    Abre la conexión a la base de datos con las claves foráneas.
-    """
 from pathlib import Path
 
-
-# Siempre apunta a tablas.db dentro de la carpeta BD.
+# Siempre apunta a tablas.db dentro de la carpeta BD,
+# sin importar desde dónde se ejecute el programa.
 RUTA_BD = Path(__file__).resolve().parent / "tablas.db"
 
 
@@ -24,18 +16,6 @@ def conectar():
     return conexion
 
 
-def insertar_producto(nombre, cantidad, precio):
-    """
-    inserta un producto y devuelve su id.
-    """
-    conexion = conectar()
-    cursor = conexion.execute(
-        "INSERT INTO productos (nombre, cantidad_disponible, precio) VALUES (?, ?, ?)",
-        (nombre, cantidad, precio),
-    )
-    conexion.commit()
-    conexion.close()
-    return cursor.lastrowid
 def leer_productos():
     """Devuelve todos los productos como una lista de diccionarios."""
     conexion = conectar()
