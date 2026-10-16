@@ -1,59 +1,37 @@
+"""Consultas de clientes y productos usando la persistencia compartida.
 
-import sqlite3
+Para mostrar los registros desde la raíz: python -m BACKEND.conexionsql.
+Importar este módulo no consulta ni modifica la base de datos.
+"""
+
+from BD import persistencia
 
 def clientes():
-    conexion = sqlite3.connect("BD/tablas.db")
-    cursor = conexion.cursor()
-
-    cursor.execute("""
-        SELECT id_cliente, nombre, apellido, email
-        FROM clientes
-    """)
-
-    clientes = cursor.fetchall()
-
-    conexion.close()
-
-    return clientes
-
-clientes = clientes()
-
-for cliente in clientes:
-    id_cliente = cliente[0]
-    nombre = cliente[1]
-    apellido = cliente[2]
-    email = cliente[3]
-
-    print("ID:", id_cliente)
-    print("Nombre:", nombre)
-    print("Apellido:", apellido)
-    print("Email:", email)
-
-
-
+    """Devuelve los clientes como una lista de diccionarios ordenada por ID."""
+    conexion = persistencia.conectar()
+    try:
+        filas = conexion.execute(
+            "SELECT id_cliente, nombre, apellido, email FROM clientes ORDER BY id_cliente"
+        ).fetchall()
+        return [dict(fila) for fila in filas]
+    finally:
+        conexion.close()
 def productos():
-    conexion = sqlite3.connect("BD/tablas.db")
-    cursor = conexion.cursor()
+    """Devuelve los productos mediante la consulta del módulo de persistencia."""
+    return persistencia.leer_productos()
 
-    cursor.execute("""
-        SELECT id_producto, nombre, cantidad, precio
-        FROM productos
-    """)
 
-    clientes = cursor.fetchall()
+if __name__ == "__main__":
+    for cliente in clientes():
+        print("ID:", cliente["id_cliente"])
+        print("Nombre:", cliente["nombre"])
+        print("Apellido:", cliente["apellido"])
+        print("Email:", cliente["email"])
+        print()
 
-    productos.close()
-
-    return productos
-
-productos = productos()
-for producto in productos:
-    id_producto = cliente[0]
-    nombre = cliente[1]
-    cantidad_disponible = cliente[2]
-    email = cliente[3]
-
-    print("ID:", id_cliente)
-    print("Nombre:", nombre)
-    print("Apellido:", apellido)
-    print("Email:", email)
+    for producto in productos():
+        print("ID:", producto["id_producto"])
+        print("Nombre:", producto["nombre"])
+        print("Cantidad disponible:", producto["cantidad_disponible"])
+        print("Precio:", producto["precio"])
+        print()

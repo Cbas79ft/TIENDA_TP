@@ -201,12 +201,14 @@ def eliminar2(lista, clave):
             anterior.sig = actual.sig
             lista.tamanio -= 1
     return dato
-def barrido2(lista):
-    if lista_vacia(lista):
-        return
-    aux = lista.inicio
-    while True:
-        print(aux.info)
-        aux = aux.sig
-        if aux == lista.inicio:
-            break
+def barrido(lista):
+    """Devuelve los elementos de la lista sin modificar sus nodos."""
+    elementos = []
+    actual = lista.inicio
+
+    # La lista lineal termina cuando el siguiente nodo es None.
+    while actual is not None:
+        elementos.append(actual.info)
+        actual = actual.sig
+
+    return elementos

@@ -1,4 +1,9 @@
-from tad_cola import Cola, arribo, atencion, cola_vacia
-from tad_pila import Pila, apilar, desapilar, pila_vacia
-from tad_listas import Lista, insertar, eliminar, lista_vacia
+"""Punto de entrada de la tienda."""
+
+from BACKEND.servidor import iniciar_servidor
+
+
+if __name__ == "__main__":
+    # Inicia el servidor HTTP que sirve la carpeta FRONTEND al ejecutar este archivo.
+    iniciar_servidor()
 
