@@ -1,6 +1,5 @@
-"""Consultas de clientes y productos usando la persistencia compartida.
+'''Consultas de clientes y productos usando la persistencia compartida.
 
-<<<<<<< HEAD
 import sqlite3
 import os
 
@@ -36,10 +35,10 @@ for cliente in clientes:
 
 
 
-=======
+
 Para mostrar los registros desde la raíz: python -m BACKEND.conexionsql.
 Importar este módulo no consulta ni modifica la base de datos.
-"""
+'''
 
 from BD import persistencia
 
@@ -53,7 +52,6 @@ def clientes():
         return [dict(fila) for fila in filas]
     finally:
         conexion.close()
->>>>>>> 960b2935f10d6bde2d8a7e943005005d0a9fdc06
 def productos():
     """Devuelve los productos mediante la consulta del módulo de persistencia."""
     return persistencia.leer_productos()
