@@ -1,8 +1,11 @@
 
 import sqlite3
+import os
+
+RUTA_BD = os.path.join(os.path.dirname(__file__), "tablas.db")
 
 def clientes():
-    conexion = sqlite3.connect("BD/tablas.db")
+    conexion = sqlite3.connect(RUTA_BD)
     cursor = conexion.cursor()
 
     cursor.execute("""
@@ -16,7 +19,7 @@ def clientes():
 
     return clientes
 
-clientes = clientes()
+cliente = clientes()
 
 for cliente in clientes:
     id_cliente = cliente[0]
