@@ -1,4 +1,10 @@
-"""Conexión a SQLite y operaciones de persistencia de productos."""
+"""
+Conexión a SQLite y operaciones de persistencia de productos.
+La persistencia guarda los productos en la base de datos SQLite para que
+no se pierda información al cerrar el programa. La lista enlazada del inventario
+se reconstruye a partir de la base de datos al iniciar el programa.
+El módulo persistencia.py no depende de inventario.py ni de servidor.py.
+"""
 
 import sqlite3
 from pathlib import Path
