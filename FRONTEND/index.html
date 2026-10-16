@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<!--
+    index.html: define la estructura de la pantalla de inventario.
+    Incluye el nombre y logotipo de la tienda, el resumen de existencias,
+    la búsqueda, la tabla de productos y los mensajes de estado.
+    Carga estilos.css para la presentación y app.js para consultar la API
+    y completar la pantalla con los productos reales del backend.
+-->
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Consulta del inventario de Tienda TP.">
+    <title>Inventario | Tienda TP</title>
+    <link rel="stylesheet" href="estilos.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <a class="saltar-contenido" href="#contenido">Ir al inventario</a>
+    <header class="encabezado">
+        <div class="encabezado-interior">
+            <a class="marca" href="/" aria-label="Tienda TP, inicio">
+                <svg class="logotipo" viewBox="0 0 40 40" aria-hidden="true">
+                    <rect width="40" height="40" rx="12" fill="currentColor"/>
+                    <path d="M12 15h16l-1 15H13l-1-15zm4 0v-3a4 4 0 0 1 8 0v3" fill="none" stroke="#102b29" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span>TIENDA<span class="marca-detalle">TP</span></span>
+            </a>
+            <span class="seccion-actual">Inventario</span>
+            <span class="etiqueta-encabezado">Gestión de productos</span>
+        </div>
+    </header>
+
+    <main id="contenido" class="contenedor">
+        <section class="introduccion" aria-labelledby="titulo">
+            <div>
+                <p class="antetitulo">TU TIENDA, EN ORDEN</p>
+                <h1 id="titulo">Inventario</h1>
+                <p class="descripcion">Todos tus productos y su disponibilidad, en un solo lugar.</p>
+            </div>
+            <button id="actualizar" class="boton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg>
+                Actualizar
+            </button>
+        </section>
+
+        <section class="resumen" aria-label="Resumen del inventario">
+            <article class="tarjeta"><p>Productos registrados</p><strong id="total-productos">—</strong><span>Referencias en el catálogo</span></article>
+            <article class="tarjeta"><p>Unidades disponibles</p><strong id="total-unidades">—</strong><span>Stock total del inventario</span></article>
+            <article class="tarjeta tarjeta-destacada"><p>Productos sin stock</p><strong id="sin-stock">—</strong><span>Referencias para reponer</span></article>
+        </section>
+
+            <!-- Formulario para registrar productos mediante la API. -->
+            <section class="alta-producto" aria-labelledby="titulo-alta">
+                <h2 id="titulo-alta">Agregar producto</h2>
+
+                <form id="formulario-producto">
+                    <fieldset id="campos-producto">
+                        <legend class="solo-lectores">Datos del producto</legend>
+
+                        <div class="campos-alta">
+                            <div>
+                                <label for="nombre-producto">Nombre</label>
+                                <input id="nombre-producto" type="text" required>
+                            </div>
+
+                            <div>
+                                <label for="cantidad-producto">Cantidad disponible</label>
+                                <input
+                                    id="cantidad-producto"
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    required
+                                >
+                            </div>
+
+                            <div>
+                                <label for="precio-producto">Precio unitario ($)</label>
+                                <input
+                                    id="precio-producto"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <button id="guardar-producto" class="boton" type="submit">
+                            Guardar producto
+                        </button>
+                        <button id="cancelar-edicion" class="boton" type="button" hidden>
+                            Cancelar edición
+                        </button>
+                    </fieldset>
+
+                    <p id="mensaje-producto" role="status" aria-live="polite"></p>
+                </form>
+            </section>
+        <section class="catalogo" aria-labelledby="titulo-catalogo">
+            <div class="barra-catalogo">
+                <div><h2 id="titulo-catalogo">Catálogo de productos</h2><p id="cantidad-resultados">Consultando inventario…</p></div>
+                <div class="buscador">
+                    <label for="buscar">Buscar por nombre o ID</label>
+                    <input id="buscar" type="search" placeholder="Ej.: teclado o 3" autocomplete="off" disabled>
+                </div>
+            </div>
+
+            <p id="estado" class="estado" role="status" aria-live="polite">Cargando productos…</p>
+            <div id="tabla-contenedor" class="tabla-contenedor" tabindex="0" role="region" aria-label="Productos del inventario; desplazamiento horizontal disponible" hidden>
+                <table>
+                    <caption class="solo-lectores">Productos, cantidades disponibles, precios y estado del stock.</caption>
+                    <thead><tr><th scope="col">ID</th><th scope="col">Producto</th><th scope="col" class="numero">Stock</th><th scope="col" class="numero">Precio unitario</th><th scope="col">Disponibilidad</th><th scope="col">Acciones</th></tr></thead>
+                    <tbody id="productos"></tbody>
+                </table>
+            </div>
+            <div class="pie-catalogo"><span>Precios expresados en pesos argentinos.</span><span id="ultima-actualizacion">Sin actualizar</span></div>
+        </section>
+        <footer class="pie-pagina"><span>TIENDA TP</span><p>Una vista clara de lo que tenés disponible.</p></footer>
+    </main>
+</body>
+</html>
