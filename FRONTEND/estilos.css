@@ -146,6 +146,23 @@ td:nth-child(2) { font-weight: 600; }
     background: #e9f4ef;
 }
 
+/* Acción para eliminar un producto del inventario. */
+.boton-eliminar {
+    margin-left: 6px;
+    border: 1px solid #e0b9b9;
+    border-radius: 7px;
+    padding: 6px 12px;
+    background: white;
+    color: #9b3434;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+}
+
+.boton-eliminar:hover {
+    background: #fbeaea;
+}
+
 #cancelar-edicion {
     margin-left: 8px;
     background: white;

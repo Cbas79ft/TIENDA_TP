@@ -10,7 +10,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from BACKEND.inventario import cargar_inventario, consultar_productos, agregar_producto, modificar_producto
+from BACKEND.inventario import cargar_inventario, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
 
 
 class ManejadorTienda(SimpleHTTPRequestHandler):
@@ -227,8 +227,63 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
             )
             return
 
-        self.responder_json(200, producto) 
+        self.responder_json(200, producto)
 
+    def do_DELETE(self):
+        """Elimina un producto identificado por la ruta /api/productos/ID."""
+        ruta =  urlsplit(self.path).path
+        partes = ruta.strip("/").split("/")
+
+        # Esperamos una dirección como /api/productos/3.
+        if len(partes) != 3 or partes[:2] != ["api", "productos"]:
+            self.responder_json(404, {"error": "Ruta inexistente."})
+            return
+
+        try:
+            id_producto = int(partes[2])
+            if id_producto <= 0:
+                raise ValueError
+        except ValueError:
+            self.responder_json(
+                400, {"error": "El ID debe ser un entero positivo."}
+            )
+            return
+
+        try:
+            #Usamos el mismo bloqueo que GET y POST.
+            with self.bloqueo:
+                producto = eliminar_producto(self.inventario, id_producto)
+        except sqlite3.IntegrityError:
+            """
+            Las claves foráneas impiden borrar un producto que ya figura
+            en compras o en la lista de espera. El inventario conserva el producto
+            porque SQLite falla antes de tocar la lista.
+            """
+            self.responder_json(
+                409,
+                {
+                    "error": (
+                        "No se puede eliminar: el producto tiene compras"
+                        "o clientes en espera asociados."
+                    )
+                }
+            
+            )
+            return
+        except sqlite3.Error:
+            self.log_error("No se pudo eliminar el producto en SQLite.")
+            self.responder_json(
+                500, {"error": "No se pudo eliminar el producto"}
+            )
+            return
+        if producto is None:
+            self.responder_json(
+                404, {"error": "El producto no existe."}
+            )
+            return
+
+        #Devolvemos el producto eliminado para que la interfaz  lo informe.
+        self.responder_json(200, producto)
 
 def iniciar_servidor(host="127.0.0.1", puerto=8000):
     """Carga el inventario y sirve la API y los archivos del frontend."""

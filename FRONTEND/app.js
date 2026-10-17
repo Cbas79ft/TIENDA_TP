@@ -130,6 +130,15 @@ function mostrarProductos() {
         botonEditar.setAttribute("aria-label", `Editar ${producto.nombre}`);
         botonEditar.addEventListener("click", () => iniciarEdicion(producto));
         celdaAcciones.append(botonEditar);
+
+        // El botón Eliminar pide confirmación antes de llamar a la API.
+        const botonEliminar = document.createElement("button");
+        botonEliminar.type = "button";
+        botonEliminar.className = "boton-eliminar";
+        botonEliminar.textContent = "Eliminar";
+        botonEliminar.setAttribute("aria-label", `Eliminar ${producto.nombre}`);
+        botonEliminar.addEventListener("click", () => eliminarProducto(producto));
+        celdaAcciones.append(botonEliminar);
         fila.append(celdaAcciones);
         fragmento.append(fila);
     }
@@ -283,3 +292,40 @@ async function guardarNuevoProducto(evento) {
 }
 
 formularioProducto.addEventListener("submit", guardarNuevoProducto);
+
+/** Elimina un producto después de pedir confirmación al usuario. */
+async function eliminarProducto(producto) {
+    const confirmado = window.confirm(
+        `¿Eliminar "${producto.nombre}" (ID ${producto.id_producto})? ` +
+        "Esta acción no se puede deshacer."
+    );
+    if (!confirmado) {
+        return;
+    }
+
+    mensajeProducto.textContent = "";
+    mensajeProducto.classList.remove("error");
+
+    try {
+        const respuesta = await fetch(`/api/productos/${producto.id_producto}`, {
+            method: "DELETE",
+            headers: { "Accept": "application/json" },
+        });
+        const resultado = await respuesta.json();
+
+        if (!respuesta.ok) {
+            throw new Error(resultado.error || "No se pudo eliminar el producto.");
+        }
+
+        // Si justo se estaba editando ese producto, se vuelve al modo alta.
+        if (idProductoEnEdicion === producto.id_producto) {
+            volverAlAlta();
+        }
+
+        await cargarProductos();
+        mensajeProducto.textContent = `Producto "${resultado.nombre}" eliminado correctamente.`;
+    } catch (error) {
+        mensajeProducto.textContent = error.message;
+        mensajeProducto.classList.add("error");
+    }
+}
