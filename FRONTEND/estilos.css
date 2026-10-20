@@ -178,3 +178,40 @@ td:nth-child(2) { font-weight: 600; }
         grid-template-columns: 1fr;
     }
 }
+/* Clientes en espera: formulario y orden FIFO del producto seleccionado. */
+select { font: inherit; }
+select:focus-visible { outline: 3px solid #247f69; outline-offset: 4px; }
+.seccion-esperas { margin-top: 30px; padding: 24px; background: white; border: 1px solid var(--linea); border-radius: 12px; scroll-margin-top: 110px; }
+.cabecera-esperas { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.cabecera-esperas p, .ayuda-espera, #estado-cola { color: var(--secundario); font-size: 13px; }
+.cabecera-esperas p { margin: 7px 0 20px; }
+.cabecera-esperas .boton { flex-shrink: 0; }
+#campos-espera { border: 0; padding: 0; margin: 0; min-width: 0; }
+.campos-espera { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.campos-espera > div { min-width: 0; }
+.campos-espera label { display: block; margin-bottom: 6px; font-size: 13px; }
+.campos-espera select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #cedada; border-radius: 8px; color: var(--tinta); background: white; }
+.campos-espera select:disabled { background: #f4f7f7; color: var(--secundario); }
+.ayuda-espera { margin: 10px 0; }
+.mensaje-espera { color: #236141; font-size: 14px; }
+.mensaje-espera:empty { display: none; }
+.mensaje-espera.error, .ayuda-espera.error, #estado-cola.error { color: #9b3434; }
+.cola-espera { margin-top: 24px; border-top: 1px solid var(--linea); padding-top: 20px; }
+.cola-espera h3 { margin: 0; font-size: 16px; }
+#lista-esperas { padding-left: 28px; margin-bottom: 0; }
+#lista-esperas li { padding: 12px 8px; border-bottom: 1px solid var(--linea); overflow-wrap: anywhere; }
+#lista-esperas li:last-child { border-bottom: 0; }
+#lista-esperas li::marker { color: #367764; font-weight: bold; }
+.detalle-espera { display: block; margin-top: 5px; color: var(--secundario); font-size: 12px; }
+.primero-espera { display: inline-block; margin-left: 10px; padding: 3px 8px; border-radius: 20px; color: #236141; background: #eaf6ef; font-size: 11px; }
+.boton-espera { margin: 6px 0 0 6px; border: 1px solid #9bc9ba; border-radius: 7px; padding: 6px 12px; background: #e9f4ef; color: #193c3a; cursor: pointer; font-size: 12px; }
+.boton-espera:hover { background: #d5ecdf; }
+.notificacion-reposicion { padding: 20px 24px; margin-bottom: 30px; border: 1px solid #9bc9ba; border-left: 4px solid #367764; border-radius: 10px; background: #e9f4ef; overflow-wrap: anywhere; }
+.notificacion-reposicion p { margin: 8px 0 0; font-size: 14px; }
+.notificacion-reposicion p:last-child { font-size: 12px; color: var(--secundario); }
+@media (max-width: 700px) {
+    .seccion-esperas { padding: 20px 16px; scroll-margin-top: 95px; }
+    .cabecera-esperas { flex-direction: column; gap: 0; margin-bottom: 18px; }
+    .campos-espera { grid-template-columns: 1fr; }
+    .notificacion-reposicion { padding: 18px 16px; }
+}

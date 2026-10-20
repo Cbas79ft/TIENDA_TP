@@ -64,11 +64,55 @@ def insertar_producto(nombre, cantidad_disponible, precio):
         conexion.close()
 
 
-def modificar_producto(id_producto, nombre, cantidad_disponible, precio):
-    """Actualiza un producto y devuelve si se encontró el registro."""
+def modificar_producto(
+    id_producto, nombre, cantidad_disponible, precio,
+    id_espera=None,
+):
+    """Actualiza un producto y, si corresponde, elimina su primera espera.
+
+    Ambas operaciones se confirman juntas o se revierten juntas.
+    Devuelve False si el producto no existe.
+    """
     conexion = conectar()
     try:
         with conexion:
+            conexion.execute("BEGIN IMMEDIATE")
+
+            if id_espera is not None:
+                producto = conexion.execute(
+                    """
+                    SELECT cantidad_disponible FROM productos
+                    WHERE id_producto = ?
+                    """,
+                    (id_producto,),
+                ).fetchone()
+
+                if producto is None:
+                    return False
+
+                if (
+                    producto["cantidad_disponible"] != 0
+                    or cantidad_disponible <= 0
+                ):
+                    raise ValueError(
+                        "La atención requiere una reposición de cero a positivo."
+                    )
+
+                primera = conexion.execute(
+                    """
+                    SELECT id_espera FROM esperas
+                    WHERE id_producto = ?
+                    ORDER BY id_espera
+                    LIMIT 1
+                    """,
+                    (id_producto,),
+                ).fetchone()
+
+                if primera is None or primera["id_espera"] != id_espera:
+                    raise ValueError(
+                        "La cola no coincide con la primera espera guardada."
+                    )
+
             cursor = conexion.execute(
                 """
                 UPDATE productos
@@ -77,7 +121,16 @@ def modificar_producto(id_producto, nombre, cantidad_disponible, precio):
                 """,
                 (nombre, cantidad_disponible, precio, id_producto),
             )
-        return cursor.rowcount > 0
+            if cursor.rowcount == 0:
+                return False
+
+            if id_espera is not None:
+                conexion.execute(
+                    "DELETE FROM esperas WHERE id_espera = ?",
+                    (id_espera,),
+                )
+
+        return True
     finally:
         conexion.close()
 

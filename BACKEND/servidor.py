@@ -17,20 +17,23 @@ from pathlib import Path
 # permite separar una URL en sus diferentes componentes.
 from urllib.parse import urlsplit
 
-from BACKEND.inventario import cargar_inventario, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
+from BD import persistencia
+from BACKEND.inventario import cargar_inventario, consultar_producto, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
+from BACKEND.esperas import cargar_colas, consultar_esperas, registrar_espera
 
 
 class ManejadorTienda(SimpleHTTPRequestHandler):
     """Atiende consultas de la API y entrega archivos del frontend."""
 
-    def __init__(self, *args, inventario, bloqueo, **kwargs):
-        """Recibe el inventario compartido antes de atender la solicitud y el bloqueo compartido."""
+    def __init__(self, *args, inventario, colas, bloqueo, **kwargs):
+        """Recibe inventario, colas y bloqueo compartidos entre solicitudes."""
         self.inventario = inventario
+        self.colas = colas
         self.bloqueo = bloqueo
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
-        """Consulta productos o entrega archivos del frontend."""
+        """Consulta productos, clientes o esperas, o entrega el frontend."""
         ruta = urlsplit(self.path).path
 
         # Solo esta dirección devuelve el inventario en JSON.
@@ -39,6 +42,52 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                 productos = consultar_productos(self.inventario)
 
             self.responder_json(200, productos)
+            return
+
+        if ruta == "/api/clientes":
+            try:
+                with self.bloqueo:
+                    clientes = persistencia.leer_clientes()
+            except sqlite3.Error:
+                self.log_error("No se pudieron consultar los clientes en SQLite.")
+                self.responder_json(
+                    500, {"error": "No se pudieron consultar los clientes."}
+                )
+                return
+
+            self.responder_json(200, clientes)
+            return
+
+        partes = ruta.strip("/").split("/")
+        if (
+            len(partes) == 4
+            and partes[:2] == ["api", "productos"]
+            and partes[3] == "esperas"
+        ):
+            try:
+                id_producto = int(partes[2])
+                if not 0 < id_producto <= 9223372036854775807:
+                    raise ValueError
+            except ValueError:
+                self.responder_json(
+                    400, {"error": "El ID debe ser un entero positivo válido."}
+                )
+                return
+
+            # El barrido rota la cola temporalmente: comparte el bloqueo
+            # con el registro de esperas y la reposición del inventario.
+            with self.bloqueo:
+                producto = consultar_producto(self.inventario, id_producto)
+                esperas = (
+                    consultar_esperas(self.colas, id_producto)
+                    if producto is not None else None
+                )
+
+            if esperas is None:
+                self.responder_json(404, {"error": "El producto no existe."})
+                return
+
+            self.responder_json(200, esperas)
             return
 
         # Las rutas de API desconocidas devuelven un error.
@@ -69,10 +118,10 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         self.wfile.write(contenido)
 
     def do_POST(self):
-        """Registra un producto recibido desde el frontend."""
+        """Registra un producto o una espera recibidos desde el frontend."""
         ruta = urlsplit(self.path).path
 
-        if ruta != "/api/productos":
+        if ruta not in ("/api/productos", "/api/esperas"):
             self.responder_json(404, {"error": "Ruta inexistente."})
             return
 
@@ -106,6 +155,10 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
             self.responder_json(
                 400, {"error": "El contenido no es un JSON válido."}
             )
+            return
+
+        if ruta == "/api/esperas":
+            self.registrar_espera_api(datos)
             return
 
         campos = {"nombre", "cantidad_disponible", "precio"}
@@ -144,7 +197,46 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
 
         # 201 significa que el producto fue creado.
         self.responder_json(201, producto)
-        
+
+    def registrar_espera_api(self, datos):
+        """Valida los IDs y registra una espera bajo el bloqueo compartido."""
+        campos = {"id_cliente", "id_producto"}
+        if not isinstance(datos, dict) or set(datos) != campos:
+            self.responder_json(
+                400,
+                {"error": "Enviá únicamente id_cliente e id_producto."},
+            )
+            return
+
+        # bool no es un ID. El límite evita desbordar los enteros de SQLite.
+        for campo in campos:
+            if (
+                type(datos[campo]) is not int
+                or not 0 < datos[campo] <= 9223372036854775807
+            ):
+                self.responder_json(
+                    400,
+                    {"error": f"{campo} debe ser un entero positivo válido."},
+                )
+                return
+
+        try:
+            with self.bloqueo:
+                espera = registrar_espera(
+                    self.colas, datos["id_cliente"], datos["id_producto"]
+                )
+        except ValueError as error:
+            self.responder_json(400, {"error": str(error)})
+            return
+        except sqlite3.Error:
+            self.log_error("No se pudo registrar la espera en SQLite.")
+            self.responder_json(
+                500, {"error": "No se pudo registrar la espera."}
+            )
+            return
+
+        self.responder_json(201, espera)
+
     def do_PUT(self):
         """Modifica un producto identificado por la ruta /api/productos/ID."""
         ruta = urlsplit(self.path).path
@@ -217,6 +309,7 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                     datos["nombre"],
                     datos["cantidad_disponible"],
                     datos["precio"],
+                    colas=self.colas,
                 )
         except ValueError as error:
             self.responder_json(400, {"error": str(error)})
@@ -298,12 +391,14 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
 
     # Se carga una sola vez al iniciar, no en cada solicitud.
     inventario = cargar_inventario()
+    colas = cargar_colas()
     bloqueo = Lock()
 
     # Cada solicitud recibe el mismo inventario y carpeta del frontend.
     manejador = partial(
         ManejadorTienda,
         inventario=inventario,
+        colas=colas,
         bloqueo=bloqueo,
         directory=str(carpeta_frontend),
     )

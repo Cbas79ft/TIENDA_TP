@@ -8,6 +8,8 @@
  * Gestiona los estados de carga, error, inventario vacío y búsqueda sin
  * resultados. Envía altas con POST y modificaciones con PUT a la API.
  * El backend se encarga de escribir en SQLite y actualizar el TDA.
+ * Registra clientes en espera, consulta su orden FIFO y muestra avisos
+ * de notificación simulada cuando se repone un producto.
  * Utiliza JavaScript nativo, sin librerías externas.
  */
 
@@ -139,6 +141,13 @@ function mostrarProductos() {
         botonEliminar.setAttribute("aria-label", `Eliminar ${producto.nombre}`);
         botonEliminar.addEventListener("click", () => eliminarProducto(producto));
         celdaAcciones.append(botonEliminar);
+        const botonEspera = document.createElement("button");
+        botonEspera.type = "button";
+        botonEspera.className = "boton-espera";
+        botonEspera.textContent = disponible ? "Ver espera" : "Anotar cliente";
+        botonEspera.setAttribute("aria-label", `Consultar espera de ${producto.nombre}`);
+        botonEspera.addEventListener("click", () => abrirEspera(producto.id_producto));
+        celdaAcciones.append(botonEspera);
         fila.append(celdaAcciones);
         fragmento.append(fila);
     }
@@ -190,12 +199,16 @@ async function cargarProductos() {
         document.querySelector("#ultima-actualizacion").textContent = `Actualizado a las ${new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" }).format(new Date())}`;
         buscar.disabled = false;
         mostrarProductos();
+        sincronizarProductosEspera();
+        await cargarEsperaSeleccionada();
     } catch (error) {
         productos = [];
         cuerpoTabla.replaceChildren();
         cantidadResultados.textContent = "Inventario no disponible";
         document.querySelector("#ultima-actualizacion").textContent = "Actualización pendiente";
         mostrarEstado("No pudimos cargar el inventario. Verificá que el servidor esté funcionando y presioná Actualizar.", true);
+        sincronizarProductosEspera();
+        await cargarEsperaSeleccionada();
         console.error("Error al consultar productos:", error);
     } finally {
         clearTimeout(temporizador);
@@ -206,7 +219,6 @@ async function cargarProductos() {
 
 buscar.addEventListener("input", mostrarProductos);
 actualizar.addEventListener("click", cargarProductos);
-cargarProductos();
 
 // Formulario para enviar nuevos productos al backend.
 const formularioProducto = document.querySelector("#formulario-producto");
@@ -277,6 +289,11 @@ async function guardarNuevoProducto(evento) {
             ? `Producto #${resultado.id_producto} actualizado correctamente.`
             : `Producto "${resultado.nombre}" guardado con ID ${resultado.id_producto}.`;
 
+        if (resultado.notificacion) {
+            document.querySelector("#aviso-reposicion").textContent = resultado.notificacion.mensaje;
+            document.querySelector("#notificacion-reposicion").hidden = false;
+        }
+
         await cargarProductos();
     } catch (error) {
         mensajeProducto.textContent =
@@ -329,3 +346,271 @@ async function eliminarProducto(producto) {
         mensajeProducto.classList.add("error");
     }
 }
+
+// La API conserva el orden de la cola; esta sección solo presenta sus datos.
+const productoEspera = document.querySelector("#producto-espera");
+const clienteEspera = document.querySelector("#cliente-espera");
+const formularioEspera = document.querySelector("#formulario-espera");
+const camposEspera = document.querySelector("#campos-espera");
+const registrarEspera = document.querySelector("#registrar-espera");
+const actualizarEsperas = document.querySelector("#actualizar-esperas");
+const estadoClientes = document.querySelector("#estado-clientes");
+const reglaEspera = document.querySelector("#regla-espera");
+const mensajeEspera = document.querySelector("#mensaje-espera");
+const estadoCola = document.querySelector("#estado-cola");
+const listaEsperas = document.querySelector("#lista-esperas");
+const fechaEspera = new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short", timeStyle: "short",
+});
+let clientesEspera = [];
+let esperasVisibles = [];
+let clientesDisponibles = false;
+let colaDisponible = false;
+let cargandoClientes = false;
+let cargandoCola = false;
+let guardandoEspera = false;
+let versionConsultaCola = 0;
+
+/** Consulta JSON con un tiempo límite; nunca reintenta una escritura. */
+async function solicitarDatosEspera(url, opciones = {}) {
+    const controlador = new AbortController();
+    const temporizador = setTimeout(() => controlador.abort(), 10000);
+    try {
+        const respuesta = await fetch(url, {
+            ...opciones,
+            headers: { "Accept": "application/json", ...opciones.headers },
+            cache: "no-store",
+            signal: controlador.signal,
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) {
+            throw new Error(datos.error || "No se pudo completar la solicitud.");
+        }
+        return datos;
+    } catch (error) {
+        if (error.name === "AbortError") {
+            throw new Error("El servidor tardó demasiado en responder.");
+        }
+        throw error;
+    } finally {
+        clearTimeout(temporizador);
+    }
+}
+
+/** Habilita el registro solo con un producto agotado y datos disponibles. */
+function actualizarControlesEspera() {
+    const producto = productos.find(p => p.id_producto === Number(productoEspera.value));
+    const puedeAnotar = Boolean(producto && producto.cantidad_disponible === 0 &&
+        clientesDisponibles && colaDisponible && !cargandoClientes && !cargandoCola);
+    camposEspera.disabled = guardandoEspera;
+    productoEspera.disabled = guardandoEspera || productos.length === 0;
+    clienteEspera.disabled = guardandoEspera || !puedeAnotar || clientesEspera.length === 0;
+    registrarEspera.disabled = guardandoEspera || !puedeAnotar || clienteEspera.value === "";
+    registrarEspera.textContent = guardandoEspera ? "Registrando…" : "Anotar cliente en espera";
+    actualizarEsperas.disabled = guardandoEspera || cargandoClientes || cargandoCola;
+    reglaEspera.textContent = !producto
+        ? "Seleccioná un producto para consultar su espera."
+        : producto.cantidad_disponible > 0
+            ? "Este producto tiene stock. Podés consultar su cola, pero no agregar nuevas esperas."
+            : "Producto sin stock: los clientes se atienden en orden de llegada al reponer.";
+}
+
+/** Reconstruye el selector sin perder el producto elegido si todavía existe. */
+function sincronizarProductosEspera() {
+    const seleccionado = productoEspera.value;
+    productoEspera.replaceChildren(new Option("Seleccioná un producto", ""));
+    for (const producto of productos) {
+        productoEspera.append(new Option(
+            `#${producto.id_producto} · ${producto.nombre} (${producto.cantidad_disponible === 0 ? "sin stock" : "con stock"})`,
+            String(producto.id_producto)
+        ));
+    }
+    if (productos.some(p => String(p.id_producto) === seleccionado)) {
+        productoEspera.value = seleccionado;
+    }
+    actualizarControlesEspera();
+}
+
+/** Presenta clientes y marca a quienes ya esperan el producto elegido. */
+function mostrarClientesEspera() {
+    const seleccionado = clienteEspera.value;
+    clienteEspera.replaceChildren(new Option("Seleccioná un cliente", ""));
+    const anotados = new Set(esperasVisibles.map(espera => espera.id_cliente));
+    for (const cliente of clientesEspera) {
+        const anotado = anotados.has(cliente.id_cliente);
+        const opcion = new Option(
+            `#${cliente.id_cliente} · ${cliente.nombre} ${cliente.apellido}${anotado ? " (ya está en espera)" : ""}`,
+            String(cliente.id_cliente)
+        );
+        opcion.disabled = anotado;
+        clienteEspera.append(opcion);
+        if (!anotado && opcion.value === seleccionado) clienteEspera.value = seleccionado;
+    }
+    actualizarControlesEspera();
+}
+
+/** Carga los clientes registrados; el catálogo puede funcionar si falla. */
+async function cargarClientesEspera() {
+    cargandoClientes = true;
+    clientesDisponibles = false;
+    estadoClientes.textContent = "Cargando clientes…";
+    estadoClientes.classList.remove("error");
+    actualizarControlesEspera();
+    try {
+        const datos = await solicitarDatosEspera("/api/clientes");
+        if (!Array.isArray(datos) || !datos.every(cliente => cliente &&
+            Number.isSafeInteger(cliente.id_cliente) && cliente.id_cliente > 0 &&
+            typeof cliente.nombre === "string" && typeof cliente.apellido === "string")) {
+            throw new Error("El formato de los clientes no es válido.");
+        }
+        clientesEspera = datos;
+        clientesDisponibles = true;
+        estadoClientes.textContent = datos.length === 0
+            ? "No hay clientes registrados. Se necesita un cliente existente para anotarlo."
+            : "Los clientes que ya esperan este producto aparecen deshabilitados.";
+    } catch (error) {
+        clientesEspera = [];
+        estadoClientes.textContent = `${error.message} Usá Actualizar espera para reintentar.`;
+        estadoClientes.classList.add("error");
+    } finally {
+        cargandoClientes = false;
+        mostrarClientesEspera();
+        dibujarColaEspera();
+    }
+}
+
+/** Muestra el orden recibido del TDA sin interpretar nombres como HTML. */
+function dibujarColaEspera() {
+    listaEsperas.replaceChildren();
+    listaEsperas.hidden = !colaDisponible || esperasVisibles.length === 0;
+    if (!colaDisponible) return;
+    estadoCola.textContent = esperasVisibles.length === 0
+        ? "Este producto no tiene clientes en espera."
+        : `${entero.format(esperasVisibles.length)} ${esperasVisibles.length === 1 ? "cliente en espera" : "clientes en espera"}. Se atiende primero a quien figura al inicio.`;
+    const clientesPorId = new Map(clientesEspera.map(cliente => [cliente.id_cliente, cliente]));
+    esperasVisibles.forEach((espera, indice) => {
+        const cliente = clientesPorId.get(espera.id_cliente);
+        const elemento = document.createElement("li");
+        const nombre = document.createElement("strong");
+        nombre.textContent = cliente
+            ? `${cliente.nombre} ${cliente.apellido}` : `Cliente #${espera.id_cliente}`;
+        elemento.append(nombre);
+        if (indice === 0) {
+            const primero = document.createElement("span");
+            primero.className = "primero-espera";
+            primero.textContent = "Primero en espera";
+            elemento.append(primero);
+        }
+        const detalle = document.createElement("span");
+        detalle.className = "detalle-espera";
+        detalle.textContent = `Espera #${espera.id_espera} · Ingreso: ${fechaEspera.format(new Date(espera.fecha_espera))}`;
+        elemento.append(detalle);
+        listaEsperas.append(elemento);
+    });
+}
+
+/** Descarta respuestas viejas si el usuario cambia de producto mientras carga. */
+async function cargarEsperaSeleccionada() {
+    const version = ++versionConsultaCola;
+    const idProducto = Number(productoEspera.value);
+    esperasVisibles = [];
+    colaDisponible = false;
+    cargandoCola = false;
+    estadoCola.classList.remove("error");
+    listaEsperas.replaceChildren();
+    listaEsperas.hidden = true;
+    mostrarClientesEspera();
+    document.querySelector("#titulo-cola").textContent = "Orden de atención";
+    if (!idProducto) {
+        estadoCola.textContent = "Seleccioná un producto para ver sus clientes en espera.";
+        document.querySelector("#cola-espera").setAttribute("aria-busy", "false");
+        return;
+    }
+    const producto = productos.find(p => p.id_producto === idProducto);
+    document.querySelector("#titulo-cola").textContent = `Espera de ${producto.nombre}`;
+    cargandoCola = true;
+    estadoCola.textContent = "Consultando clientes en espera…";
+    document.querySelector("#cola-espera").setAttribute("aria-busy", "true");
+    actualizarControlesEspera();
+    try {
+        const datos = await solicitarDatosEspera(`/api/productos/${idProducto}/esperas`);
+        if (version !== versionConsultaCola) return;
+        if (!Array.isArray(datos) || !datos.every(espera => espera &&
+            Number.isSafeInteger(espera.id_espera) && espera.id_espera > 0 &&
+            Number.isSafeInteger(espera.id_cliente) && espera.id_cliente > 0 &&
+            espera.id_producto === idProducto && typeof espera.fecha_espera === "string" &&
+            Number.isFinite(Date.parse(espera.fecha_espera)))) {
+            throw new Error("El formato de las esperas no es válido.");
+        }
+        esperasVisibles = datos;
+        colaDisponible = true;
+        dibujarColaEspera();
+    } catch (error) {
+        if (version !== versionConsultaCola) return;
+        estadoCola.textContent = `${error.message} Usá Actualizar espera para reintentar.`;
+        estadoCola.classList.add("error");
+    } finally {
+        if (version === versionConsultaCola) {
+            cargandoCola = false;
+            document.querySelector("#cola-espera").setAttribute("aria-busy", "false");
+            mostrarClientesEspera();
+        }
+    }
+}
+
+/** Abre la consulta desde la fila del catálogo, incluso si tiene stock. */
+function abrirEspera(idProducto) {
+    if (guardandoEspera) return;
+    productoEspera.value = String(idProducto);
+    mensajeEspera.textContent = "";
+    mensajeEspera.classList.remove("error");
+    cargarEsperaSeleccionada();
+    document.querySelector("#seccion-esperas").scrollIntoView({ block: "start" });
+    productoEspera.focus({ preventScroll: true });
+}
+
+/** Guarda una espera y vuelve a consultar su posición confirmada por el servidor. */
+async function guardarEspera(evento) {
+    evento.preventDefault();
+    if (guardandoEspera || registrarEspera.disabled || !formularioEspera.reportValidity()) return;
+    const idProducto = Number(productoEspera.value);
+    const idCliente = Number(clienteEspera.value);
+    guardandoEspera = true;
+    mensajeEspera.textContent = "";
+    mensajeEspera.classList.remove("error");
+    actualizarControlesEspera();
+    try {
+        await solicitarDatosEspera("/api/esperas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_cliente: idCliente, id_producto: idProducto }),
+        });
+        clienteEspera.value = "";
+        mensajeEspera.textContent = "Cliente registrado en espera correctamente.";
+        await cargarEsperaSeleccionada();
+    } catch (error) {
+        mensajeEspera.textContent = `${error.message} Consultá la cola antes de volver a enviarlo.`;
+        mensajeEspera.classList.add("error");
+        // Si el stock cambió o se perdió la respuesta, consulta lo que quedó guardado.
+        await cargarProductos();
+    } finally {
+        guardandoEspera = false;
+        actualizarControlesEspera();
+    }
+}
+
+productoEspera.addEventListener("change", () => {
+    mensajeEspera.textContent = "";
+    mensajeEspera.classList.remove("error");
+    cargarEsperaSeleccionada();
+});
+clienteEspera.addEventListener("change", actualizarControlesEspera);
+formularioEspera.addEventListener("submit", guardarEspera);
+actualizarEsperas.addEventListener("click", () => {
+    cargarClientesEspera();
+    cargarProductos();
+});
+
+// Se inicia después de declarar todos los controles de ambas secciones.
+cargarProductos();
+cargarClientesEspera();

@@ -1,6 +1,7 @@
 """Carga y consulta del inventario usando las primitivas del TDA Lista."""
 
 from BD import persistencia
+from BACKEND.esperas import preparar_notificacion, confirmar_atencion
 from BACKEND.producto import crear_producto
 from BACKEND.tad_listas import Lista, barrido, buscar1, inserta1, eliminar1
 
@@ -75,15 +76,18 @@ def agregar_producto(inventario, nombre, cantidad_disponible, precio):
     return producto.copy()
 
 def modificar_producto(
-    inventario, id_producto, nombre, cantidad_disponible, precio
+    inventario, id_producto, nombre, cantidad_disponible, precio,
+    colas=None,
 ):
-    """Modifica un producto conservando su identificador.
+    """Modifica el producto y atiende una espera si se repone stock.
 
     Devuelve una copia del producto actualizado, o None si no existe.
-    Lanza ValueError si los datos son inválidos.
+    El aviso se agrega solo a la respuesta. Al compartir los TDA entre
+    solicitudes, el llamador debe usar el mismo bloqueo para toda la operación.
     """
     # Buscamos el producto usando la consulta del inventario.
-    if consultar_producto(inventario, id_producto) is None:
+    anterior = consultar_producto(inventario, id_producto)
+    if anterior is None:
         return None
 
     # Validamos los nuevos datos antes de modificar la base o la lista.
@@ -94,12 +98,26 @@ def modificar_producto(
         precio,
     )
 
-    # Primero guardamos los cambios en SQLite.
+    notificacion = None
+    if (
+        colas is not None
+        and anterior["cantidad_disponible"] == 0
+        and producto["cantidad_disponible"] > 0
+    ):
+        notificacion = preparar_notificacion(
+            colas, id_producto, producto["nombre"]
+        )
+
+    # La reposición y la eliminación de la espera se guardan juntas.
     actualizado = persistencia.modificar_producto(
         producto["id_producto"],
         producto["nombre"],
         producto["cantidad_disponible"],
         producto["precio"],
+        id_espera=(
+            notificacion["id_espera"]
+            if notificacion is not None else None
+        ),
     )
 
     # Si el registro ya no existe en la base, no cambiamos la lista.
@@ -111,7 +129,14 @@ def modificar_producto(
     eliminar1(inventario, {"id_producto": id_producto}, "id_producto")
     inserta1(inventario, producto, "id_producto")
 
-    return producto.copy()
+    if notificacion is not None:
+        confirmar_atencion(colas, id_producto)
+
+    resultado = producto.copy()
+    if notificacion is not None:
+        resultado["notificacion"] = notificacion
+
+    return resultado
 
 def eliminar_producto(inventario, id_producto):
     """Elimina un producto de SQLite y de la lista enlazada.
