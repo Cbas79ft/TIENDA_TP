@@ -2,12 +2,19 @@
 
 """Servidor HTTP de la tienda y rutas de su API."""
 
+# Permite conexion a la base de datos.
 import sqlite3
+# controlar el acceso a recursos compartidos.
 from threading import Lock
+# Permite trabajar con formato JSON.
 import json
+# permite crear una nueva función a partir de otra.
 from functools import partial
+# simpleHTTP: Se encarga de atender solicitudes HTTP | Permite ejecutar un servidor HTTP capaz de atender múltiples solicitudes.
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+# permite trabajar con rutas de archivos y directorios de manera más sencilla.
 from pathlib import Path
+# permite separar una URL en sus diferentes componentes.
 from urllib.parse import urlsplit
 
 from BACKEND.inventario import cargar_inventario, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
