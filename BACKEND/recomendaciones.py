@@ -49,10 +49,10 @@ def _cambiar_popularidad(estado, id_producto, variacion):
         estado.raiz, _ = eliminar_nodo(estado.raiz, (actual, id_producto))
     if nueva > 0:
         estado.raiz = insertar_nodo(estado.raiz, (nueva, id_producto))
-        estado.conteos[id_producto] = nueva
+        estado.conteo[id_producto] = nueva
     else:
         #Sin compras, el producto sale del árbol de popularidad
-        del estado.conteos[id_producto]
+        del estado.conteo[id_producto]
 
 def registrar_compra(estado, ids_productos):
     """
@@ -70,7 +70,7 @@ def revertir_compra(estado, ids_productos):
     """
     distintos = set(ids_productos)
     for id_producto in distintos:
-        if estado.conteos.get(id_producto, 0) < 1:
+        if estado.conteo.get(id_producto, 0) < 1:
             raise ValueError(f"El producto #{id_producto} no tiene compras para revertir.")
     for id_producto in distintos:
         _cambiar_popularidad(estado, id_producto, -1)
