@@ -1,4 +1,4 @@
-from tad_cola import Cola, arribo, cola_vacia, atencion
+from BACKEND.tad_cola import Cola, arribo, cola_vacia, atencion
 
 class nodoArbol(object):
     def __init__(self, info):
@@ -82,3 +82,16 @@ def altura(raiz):
     if raiz is None:
         return -1
     return 1 + max(altura(raiz.izq), altura(raiz.der))
+def mayores(raiz, cantidad, resultado=None):
+    """
+    Devuelve hasta 'cantidad' datos del árbol, de menor a mayor.
+    Es un recorrido inverso inorden que se detiene apenas reúne los datos pedidos. 
+    """
+    if resultado is None:
+        resultado = []
+    if raiz is not None and len(resultado) < cantidad:
+        mayores(raiz.der, cantidad, resultado)
+        if len(resultado) < cantidad:
+            resultado.append(raiz.info)
+            mayores(raiz.izq, cantidad, resultado)
+    return resultado

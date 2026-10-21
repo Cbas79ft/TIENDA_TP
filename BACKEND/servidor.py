@@ -15,8 +15,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 # permite trabajar con rutas de archivos y directorios de manera más sencilla.
 from pathlib import Path
 # permite separar una URL en sus diferentes componentes.
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
+from BACKEND.recomendaciones import cargar_popularidad, consultar_recomendados
 from BD import persistencia
 from BACKEND.inventario import cargar_inventario, consultar_producto, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
 from BACKEND.esperas import cargar_colas, consultar_esperas, registrar_espera
@@ -25,16 +26,21 @@ from BACKEND.esperas import cargar_colas, consultar_esperas, registrar_espera
 class ManejadorTienda(SimpleHTTPRequestHandler):
     """Atiende consultas de la API y entrega archivos del frontend."""
 
-    def __init__(self, *args, inventario, colas, bloqueo, **kwargs):
+    def __init__(self, *args, inventario, colas, popularidad, bloqueo, **kwargs):
         """Recibe inventario, colas y bloqueo compartidos entre solicitudes."""
         self.inventario = inventario
         self.colas = colas
+        self.popularidad = popularidad
         self.bloqueo = bloqueo
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
         """Consulta productos, clientes o esperas, o entrega el frontend."""
         ruta = urlsplit(self.path).path
+
+        if ruta == "/api/recomendados":
+            self.responder_recomendaciones()
+            return
 
         # Solo esta dirección devuelve el inventario en JSON.
         if ruta == "/api/productos":
@@ -385,6 +391,26 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         #Devolvemos el producto eliminado para que la interfaz  lo informe.
         self.responder_json(200, producto)
 
+def responder_recomendaciones(self):
+    """Devuelve los productos más populares: GET /api/recomendaciones?cantidad=5."""
+    consulta = parse_qs(urlsplit(self.path).query)
+    try:
+        cantidad = int(consulta.get("cantidad", ["5"])[0])
+    except ValueError:
+        self.responder_json(400, {"error": "La cantidad debe ser un entero."})
+        return
+
+    try:
+        with self.bloqueo:
+            recomendados = consultar_recomendados(
+                self.popularidad, self.inventario, cantidad
+            )
+    except ValueError as error:
+        self.responder_json(400, {"error": str(error)})
+        return
+
+    self.responder_json(200, recomendados)
+
 def iniciar_servidor(host="127.0.0.1", puerto=8000):
     """Carga el inventario y sirve la API y los archivos del frontend."""
     carpeta_frontend = Path(__file__).resolve().parent.parent / "FRONTEND"
@@ -392,6 +418,7 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
     # Se carga una sola vez al iniciar, no en cada solicitud.
     inventario = cargar_inventario()
     colas = cargar_colas()
+    popularidad = cargar_popularidad()
     bloqueo = Lock()
 
     # Cada solicitud recibe el mismo inventario y carpeta del frontend.
@@ -399,6 +426,7 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
         ManejadorTienda,
         inventario=inventario,
         colas=colas,
+        popularidad=popularidad,
         bloqueo=bloqueo,
         directory=str(carpeta_frontend),
     )

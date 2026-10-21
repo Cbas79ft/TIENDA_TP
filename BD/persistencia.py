@@ -295,3 +295,21 @@ def eliminar_espera(id_espera):
         return cursor.rowcount > 0
     finally:
         conexion.close()
+
+def leer_popularidad():
+    """
+    Cuenta en cuantas compras figura cada producto.
+    Cada compra tiene una única fila de detalle por producto,
+    asi que COUNT(*) equivale a 'numero de veces que el producto fue comprado'.
+    """
+    conexion = conectar()
+    try:
+        filas = conexion.execute(
+            "SELECT id_producto, COUNT(*) AS popularidad "
+            "FROM detalle_transaccion "
+            "GROUP BY id_producto "
+            "ORDER BY id_producto"
+        ).fetchall()
+        return [dict(fila) for fila in filas]
+    finally:
+        conexion.close()
