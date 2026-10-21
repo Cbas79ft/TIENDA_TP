@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Catálogo de compra de Tienda TP con popularidad de productos.">
+    <title>Comprar | Tienda TP</title>
+    <link rel="stylesheet" href="compra.css">
+    <script src="compra.js" defer></script>
+</head>
+<body>
+    <header class="encabezado">
+        <div class="encabezado-interior">
+            <a class="marca" href="/" aria-label="Tienda TP, inventario"><span class="logo">T</span><span>TIENDA<span class="marca-detalle">TP</span></span></a>
+            <nav aria-label="Secciones"><a href="/">Inventario</a><a class="activo" href="/compra.html">Comprar</a></nav>
+        </div>
+    </header>
+
+    <main class="contenedor">
+        <section class="introduccion">
+            <div>
+                <p class="antetitulo">ENCONTRÁ LO QUE BUSCÁS</p>
+                <h1>Comprar productos</h1>
+                <p class="descripcion">Explorá el catálogo y mirá cuántas compras tiene cada producto.</p>
+            </div>
+            <a class="boton-secundario" href="/">Ir al inventario</a>
+        </section>
+
+        <section class="panel-carrito" aria-labelledby="titulo-carrito">
+            <div>
+                <h2 id="titulo-carrito">Tu carrito</h2>
+                <p id="resumen-carrito">Todavía no agregaste productos.</p>
+            </div>
+            <div class="total-carrito"><span>Total</span><strong id="total-carrito">$ 0</strong></div>
+            <button id="vaciar-carrito" class="boton-secundario" type="button" disabled>Vaciar carrito</button>
+        </section>
+
+        <section class="catalogo" aria-labelledby="titulo-catalogo">
+            <div class="cabecera-catalogo">
+                <div><h2 id="titulo-catalogo">Todos los productos</h2><p id="cantidad-resultados">Cargando catálogo…</p></div>
+                <div class="filtros">
+                    <label for="buscar">Buscar producto</label>
+                    <input id="buscar" type="search" placeholder="Nombre o ID" autocomplete="off" disabled>
+                    <label for="orden">Ordenar por</label>
+                    <select id="orden" disabled>
+                        <option value="popularidad">Más populares</option>
+                        <option value="nombre">Nombre</option>
+                        <option value="precio">Menor precio</option>
+                    </select>
+                </div>
+            </div>
+            <p id="estado" role="status" aria-live="polite">Cargando productos…</p>
+            <div id="productos" class="productos" aria-live="polite"></div>
+            <p class="nota" id="nota-popularidad">La popularidad indica en cuántas compras figura cada producto; no representa unidades vendidas.</p>
+        </section>
+        <footer><span>TIENDA TP</span><p>Catálogo de productos</p></footer>
+    </main>
+</body>
+</html>
