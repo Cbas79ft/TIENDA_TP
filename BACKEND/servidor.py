@@ -391,25 +391,25 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         #Devolvemos el producto eliminado para que la interfaz  lo informe.
         self.responder_json(200, producto)
 
-def responder_recomendaciones(self):
-    """Devuelve los productos más populares: GET /api/recomendaciones?cantidad=5."""
-    consulta = parse_qs(urlsplit(self.path).query)
-    try:
-        cantidad = int(consulta.get("cantidad", ["5"])[0])
-    except ValueError:
-        self.responder_json(400, {"error": "La cantidad debe ser un entero."})
-        return
+    def responder_recomendaciones(self):
+        """Devuelve los productos más populares: GET /api/recomendados?cantidad=5."""
+        consulta = parse_qs(urlsplit(self.path).query)
+        try:
+            cantidad = int(consulta.get("cantidad", ["5"])[0])
+        except ValueError:
+            self.responder_json(400, {"error": "La cantidad debe ser un entero."})
+            return
 
-    try:
-        with self.bloqueo:
-            recomendados = consultar_recomendados(
-                self.popularidad, self.inventario, cantidad
-            )
-    except ValueError as error:
-        self.responder_json(400, {"error": str(error)})
-        return
+        try:
+            with self.bloqueo:
+                recomendados = consultar_recomendados(
+                    self.popularidad, self.inventario, cantidad
+                )
+        except ValueError as error:
+            self.responder_json(400, {"error": str(error)})
+            return
 
-    self.responder_json(200, recomendados)
+        self.responder_json(200, recomendados)
 
 def iniciar_servidor(host="127.0.0.1", puerto=8000):
     """Carga el inventario y sirve la API y los archivos del frontend."""

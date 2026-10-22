@@ -84,7 +84,7 @@ def altura(raiz):
     return 1 + max(altura(raiz.izq), altura(raiz.der))
 def mayores(raiz, cantidad, resultado=None):
     """
-    Devuelve hasta 'cantidad' datos del árbol, de menor a mayor.
+    Devuelve hasta 'cantidad' datos del árbol, de mayor a menor.
     Es un recorrido inverso inorden que se detiene apenas reúne los datos pedidos. 
     """
     if resultado is None:
