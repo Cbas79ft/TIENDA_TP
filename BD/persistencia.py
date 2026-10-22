@@ -12,6 +12,7 @@ from pathlib import Path
 # Siempre apunta a tablas.db dentro de la carpeta BD,
 # sin importar desde dónde se ejecute el programa.
 RUTA_BD = Path(__file__).resolve().parent / "tablas.db"
+RUTA_DDL = Path(__file__).resolve().parent / "ddl.sql"
 
 
 def conectar():
@@ -21,6 +22,18 @@ def conectar():
     conexion.row_factory = sqlite3.Row
     return conexion
 
+def inicializador_bd():
+    """
+    Crea las tablas ejecutando el ddl.sql.
+    Si las tablas ya existen no hace nada (el DDL usa IF NOT EXISTS), así
+    que se puede llamar siempre antes de cargar o usar la base.
+    """
+    script = RUTA_DDL.read_text(encoding="utf-8")
+    conexion = conectar()
+    try:
+        conexion.executescript(script)
+    finally:
+        conexion.close
 
 def leer_productos():
     """Devuelve todos los productos como una lista de diccionarios."""
