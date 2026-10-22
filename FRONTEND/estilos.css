@@ -315,6 +315,16 @@ body[data-pagina="compra"] .encabezado nav a.activo {
     font-weight:700;
 }
 
+body[data-pagina="compra"] .encabezado nav a:hover {
+    background: #e9f5e2;
+    color: #285b48;
+}
+
+body[data-pagina="compra"] .encabezado nav a.activo:hover {
+    background: #d8ebce;
+    color: #18332f;
+}
+
 body[data-pagina="compra"] .contenedor {
     max-width:1120px;
     margin:0 auto;
@@ -547,8 +557,9 @@ body[data-pagina="compra"] .agregar {
     cursor:pointer;
 }
 
-body[data-pagina="compra"] .agregar:hover {
-    background:#285b48;
+body[data-pagina="compra"] .agregar:hover:not(:disabled) {
+    background: #285b48;
+    color: #ffffff;
 }
 
 body[data-pagina="compra"] .agregar:disabled {

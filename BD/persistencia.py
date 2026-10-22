@@ -22,7 +22,7 @@ def conectar():
     conexion.row_factory = sqlite3.Row
     return conexion
 
-def inicializador_bd():
+def inicializar_bd():
     """
     Crea las tablas ejecutando el ddl.sql.
     Si las tablas ya existen no hace nada (el DDL usa IF NOT EXISTS), así
@@ -33,7 +33,7 @@ def inicializador_bd():
     try:
         conexion.executescript(script)
     finally:
-        conexion.close
+        conexion.close()
 
 def leer_productos():
     """Devuelve todos los productos como una lista de diccionarios."""
