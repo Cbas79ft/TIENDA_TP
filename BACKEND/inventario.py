@@ -169,3 +169,13 @@ def eliminar_producto(inventario, id_producto):
     return producto.copy()
 
 
+
+
+def sincronizar_productos(inventario, ids_productos):
+    """Actualiza productos ya confirmados en SQLite mediante primitivas de lista."""
+    for id_producto in ids_productos:
+        producto = persistencia.consultar_producto(id_producto)
+        if producto is None:
+            raise ValueError('El producto ya no existe.')
+        eliminar1(inventario, {'id_producto': id_producto}, 'id_producto')
+        inserta1(inventario, producto, 'id_producto')

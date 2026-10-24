@@ -123,45 +123,6 @@
             </div>
             <div class="pie-catalogo"><span>Precios expresados en pesos argentinos.</span><span id="ultima-actualizacion">Sin actualizar</span></div>
         </section>
-        <section id="seccion-esperas" class="seccion-esperas" aria-labelledby="titulo-esperas">
-            <div class="cabecera-esperas">
-                <div>
-                    <h2 id="titulo-esperas">Clientes en espera</h2>
-                    <p>Elegí un producto para consultar su cola. Al reponer stock, se notifica al primero.</p>
-                </div>
-                <button id="actualizar-esperas" class="boton" type="button">Actualizar espera</button>
-            </div>
-
-            <form id="formulario-espera">
-                <fieldset id="campos-espera">
-                    <legend class="solo-lectores">Registrar un cliente en espera</legend>
-                    <div class="campos-espera">
-                        <div>
-                            <label for="producto-espera">Producto</label>
-                            <select id="producto-espera" required disabled>
-                                <option value="">Seleccioná un producto</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="cliente-espera">Cliente registrado</label>
-                            <select id="cliente-espera" required disabled aria-describedby="estado-clientes">
-                                <option value="">Seleccioná un cliente</option>
-                            </select>
-                        </div>
-                    </div>
-                    <p id="estado-clientes" class="ayuda-espera" role="status" aria-live="polite">Cargando clientes…</p>
-                    <p id="regla-espera" class="ayuda-espera">Solo se pueden registrar esperas de productos sin stock.</p>
-                    <button id="registrar-espera" class="boton" type="submit" disabled>Anotar cliente en espera</button>
-                </fieldset>
-                <p id="mensaje-espera" class="mensaje-espera" role="status" aria-live="polite"></p>
-            </form>
-
-            <div id="cola-espera" class="cola-espera" aria-busy="false">
-                <h3 id="titulo-cola">Orden de atención</h3>
-                <p id="estado-cola" role="status" aria-live="polite">Seleccioná un producto para ver sus clientes en espera.</p>
-                <ol id="lista-esperas" aria-labelledby="titulo-cola" hidden></ol>
-            </div>
-        </section>
         <footer class="pie-pagina"><span>TIENDA TP</span><p>Una vista clara de lo que tenés disponible.</p></footer>
     </main>
 </body>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu carrito | Tienda TP</title><link rel="stylesheet" href="estilos.css"><script src="portal.js" defer></script></head>
+<body data-pagina="compra" data-vista="carrito">
+<header class="encabezado"><div class="encabezado-interior">
+<a class="marca" href="/compra.html"><span class="logo">T</span><span>TIENDA<span class="marca-detalle">TP</span></span></a>
+<nav aria-label="Secciones"><a href="/">Inventario</a><a href="/compra.html">Comprar</a><a href="/carrito.html" class="activo" aria-current="page">Ver carrito</a></nav>
+</div></header>
+<div class="contenedor">
+<section id="ingreso" class="acceso-cliente" aria-labelledby="titulo-ingreso">
+<p class="antetitulo">BIENVENIDO A TIENDA TP</p><h1 id="titulo-ingreso">Ingresá para comprar</h1>
+<p>Ingresá tu DNI. Si es tu primera visita, te pediremos nombre y apellido.</p>
+<form id="formulario-ingreso"><label for="dni-ingreso">DNI</label>
+<input id="dni-ingreso" name="dni" type="text" inputmode="numeric" autocomplete="off" maxlength="12" required placeholder="Ej.: 12345678">
+<div id="datos-nuevo-cliente" hidden><label for="nombre-ingreso">Nombre</label><input id="nombre-ingreso" name="nombre" autocomplete="given-name" maxlength="100">
+<label for="apellido-ingreso">Apellido</label><input id="apellido-ingreso" name="apellido" autocomplete="family-name" maxlength="100"></div>
+<button class="boton-portal" id="continuar-ingreso" type="submit">Continuar</button>
+<p id="estado-ingreso" role="status" aria-live="polite"></p></form></section>
+<div id="identidad-cliente" class="identidad-cliente" hidden><span id="nombre-cliente"></span><button id="salir-cliente" type="button" class="boton-secundario">Salir</button></div>
+<p id="mensaje-portal" role="status" aria-live="polite"></p>
+<main id="portal-contenido" hidden>
+<section class="introduccion"><div><p class="antetitulo">TU SELECCIÓN</p><h1>Tu carrito</h1><p class="descripcion">Revisá los productos que agregaste y tus reservas pendientes.</p></div><a href="/compra.html" class="boton-secundario">Seguir comprando</a></section>
+<section class="catalogo" aria-labelledby="titulo-carrito"><h2 id="titulo-carrito">Productos para comprar</h2><p id="resumen-carrito"></p><ul id="detalle-carrito" class="lista-carrito"></ul><div class="pie-carrito"><div class="total-carrito"><span>Total estimado</span><strong id="total-carrito">$ 0</strong></div><button id="comprar-carrito" class="boton-portal" type="button" disabled>Comprar</button><button id="vaciar-carrito" class="boton-secundario" type="button" disabled>Vaciar carrito</button></div><p class="nota">Los precios y las existencias se verifican al confirmar la compra.</p></section>
+<section class="catalogo bloque-carrito" aria-labelledby="titulo-reservas"><h2 id="titulo-reservas">En espera de stock</h2><p class="nota">Tus reservas respetan el orden de llegada. Al reponer stock se avisa al primer cliente.</p><ul id="reservas-carrito" class="lista-carrito"></ul></section>
+<section class="catalogo bloque-carrito" aria-labelledby="titulo-avisos"><h2 id="titulo-avisos">Avisos de reposición</h2><ul id="avisos-carrito" class="lista-carrito"></ul></section>
+<section class="catalogo bloque-carrito" aria-labelledby="titulo-compras"><h2 id="titulo-compras">Tus compras</h2><ul id="compras-cliente" class="lista-carrito"></ul></section>
+<button id="actualizar-portal" class="boton-secundario" type="button">Actualizar</button></main><footer><span>TIENDA TP</span><p>Tu tienda, en orden.</p></footer></div></body></html>

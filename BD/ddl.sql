@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS clientes (
     id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre     TEXT NOT NULL,
     apellido   TEXT NOT NULL,
-    email      TEXT NOT NULL UNIQUE
+    -- NULL se reserva para clientes anteriores pendientes de completar su DNI.
+    dni        TEXT UNIQUE CHECK (dni IS NULL OR (length(dni) BETWEEN 7 AND 8 AND dni NOT GLOB '*[^0-9]*'))
 );
 
 -- Inventario. Al iniciar el servidor se carga en el TDA Lista.
@@ -77,4 +78,12 @@ CREATE TABLE IF NOT EXISTS detalle_transaccion (
 
     CHECK (cantidad > 0),
     CHECK (precio_unitario >= 0)
+);
+-- Avisos persistentes de reposición para el cliente que fue atendido.
+CREATE TABLE IF NOT EXISTS notificaciones (
+    id_notificacion INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_cliente INTEGER NOT NULL REFERENCES clientes(id_cliente),
+    id_producto INTEGER NOT NULL REFERENCES productos(id_producto),
+    fecha TEXT NOT NULL,
+    mensaje TEXT NOT NULL
 );

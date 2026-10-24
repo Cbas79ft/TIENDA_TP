@@ -1,7 +1,6 @@
 """Reglas y preparación de compras para la gestión con TDA Pila.
 
-Este primer paso valida y prepara los datos. El guardado, el descuento
-de stock, el apilado y la reversión se incorporarán en los pasos siguientes.
+Valida, guarda, apila y revierte compras coordinando inventario y esperas.
 Las operaciones compartidas deberán usar el bloqueo del servidor.
 """
 
@@ -12,7 +11,10 @@ from math import isfinite
 
 from BD import persistencia
 from BACKEND.inventario import consultar_producto
-from BACKEND.tad_pila import en_cima, pila_vacia
+from BACKEND.tad_pila import Pila, apilar, desapilar, en_cima, pila_vacia
+from BACKEND.inventario import sincronizar_productos
+from BACKEND.esperas import confirmar_atencion
+from BACKEND import recomendaciones
 
 
 MAX_ENTERO_SQLITE = 9223372036854775807
@@ -101,3 +103,57 @@ def consultar_ultima_transaccion(pila):
     if pila_vacia(pila):
         raise ValueError("No hay transacciones para deshacer.")
     return deepcopy(en_cima(pila))
+
+
+
+def cargar_pila():
+    """Reconstruye la pila global dejando arriba la compra más reciente."""
+    pila = Pila()
+    for compra in persistencia.leer_transacciones():
+        apilar(pila, compra)
+    return pila
+
+
+def registrar_transaccion(inventario, pila, popularidad, indice_stock, id_cliente, productos):
+    """Registra una compra completa bajo el bloqueo compartido del servidor."""
+    compra = preparar_compra(inventario, id_cliente, productos)
+    compra['id_transaccion'] = persistencia.guardar_compra(compra)
+    ids = [d['id_producto'] for d in compra['productos']]
+    sincronizar_productos(inventario, ids)
+    apilar(pila, compra)
+    recomendaciones.registrar_compra(popularidad, ids)
+    indice_stock.actualizar(inventario)
+    return deepcopy(compra)
+
+
+def deshacer_transaccion(inventario, colas, pila, popularidad, indice_stock, id_transaccion):
+    """Deshace la cima y restaura inventario, colas y árboles tras confirmar SQLite."""
+    ultima = consultar_ultima_transaccion(pila)
+    if ultima['id_transaccion'] != id_transaccion:
+        raise ValueError('La última compra cambió. Actualizá el historial.')
+    ids = [d['id_producto'] for d in ultima['productos']]
+    if any(popularidad.conteo.get(id_producto, 0) < 1 for id_producto in ids):
+        raise ValueError('El árbol de popularidad no coincide con las compras.')
+    atendidas = persistencia.revertir_ultima_compra(id_transaccion)
+    sincronizar_productos(inventario, ids)
+    for espera in atendidas:
+        confirmar_atencion(colas, espera['id_producto'])
+    desapilar(pila)
+    recomendaciones.revertir_compra(popularidad, ids)
+    indice_stock.actualizar(inventario)
+    return {'transaccion': ultima, 'notificaciones': atendidas}
+
+
+def consultar_historial(pila):
+    """Recorre la pila con una auxiliar y restituye su orden original."""
+    auxiliar = Pila()
+    historial = []
+    try:
+        while not pila_vacia(pila):
+            compra = desapilar(pila)
+            apilar(auxiliar, compra)
+            historial.append(deepcopy(compra))
+    finally:
+        while not pila_vacia(auxiliar):
+            apilar(pila, desapilar(auxiliar))
+    return historial

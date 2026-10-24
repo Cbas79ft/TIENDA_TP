@@ -32,13 +32,12 @@ PRODUCTOS_INICIALES = [
     ("Foco LED 9W Luz Fría", 200, 1400.00),
 ]
 
+# DNI de ejemplo: este módulo es exclusivamente una carga manual de prueba.
 CLIENTES_INICIALES = [
-    ("Sebastian", "Trujillo", "strujillo@gmail.com"),
-    ("Agustin", "Sanoguera", "aesanoguera@gmail.com"),
-    ("Carlos", "Rodríguez", "carlos.rodriguez@example.com"),
-    ("Lucía", "Fernández", "lucia.fernandez@example.com"),
-    ("Martín", "López", "martin.lopez@example.com"),
+    ('Cliente', 'Ejemplo Uno', '90000001'),
+    ('Cliente', 'Ejemplo Dos', '90000002'),
 ]
+
 
 
 def cargar_datos():
@@ -65,7 +64,7 @@ def cargar_datos():
 
             if conexion.execute("SELECT 1 FROM clientes LIMIT 1").fetchone() is None:
                 conexion.executemany(
-                    "INSERT INTO clientes (nombre, apellido, email) VALUES (?, ?, ?)",
+                    "INSERT INTO clientes (nombre, apellido, dni) VALUES (?, ?, ?)",
                     CLIENTES_INICIALES,
                 )
                 cantidades["clientes"] = len(CLIENTES_INICIALES)

@@ -29,17 +29,43 @@
 12. Para el futuro árbol de popularidad, cada compra cuenta una vez por producto,
     independientemente de las unidades. Deshacer revierte ese incremento.
 
-## Estado del paso 1
+## Implementación
 
-`transacciones.py` implementa la preparación y validación de una compra, genera
-su fecha UTC y permite consultar una copia de la cima mediante el TDA Pila.
-Los identificadores y cantidades se limitan al rango entero de SQLite; no se
-aceptan booleanos, precios externos ni totales externos en las líneas de compra.
+Las compras se preparan y se confirman en SQLite junto con sus detalles y el
+descuento de stock. Tras confirmar se actualizan lista, pila y ambos árboles.
+La reversión de la cima devuelve unidades al stock actual y atiende al primer
+cliente de cada cola cuyo producto pasa de cero a positivo, guardando también
+un aviso persistente. Se reconstruyen las estructuras al iniciar el servidor.
 
-La preparación no guarda ni descuenta stock, no registra esperas y no apila.
-La persistencia deberá volver a comprobar cliente, productos y disponibilidad
-dentro de su transacción al confirmar una compra.
+El árbol de popularidad cuenta compras distintas por producto. Un segundo BST
+ordena claves (stock, id_producto) para consultar las menores existencias.
 
-El guardado, el registro en la pila, la reversión, la conexión con las colas,
-la recuperación al iniciar, las rutas HTTP y la interfaz se implementarán en
-los pasos siguientes. El árbol corresponde al punto 4 de la consigna.
+## Ingreso y carrito
+
+El cliente ingresa por DNI. Si es nuevo, completa nombre y apellido. Los DNI se
+normalizan quitando puntos y espacios; se exige un documento de siete u ocho
+dígitos y se garantiza su unicidad. No se almacena email.
+
+El navegador guarda la identificación y el carrito en sessionStorage durante
+esa pestaña. Al iniciar una pestaña nueva se pide DNI otra vez. Las reservas,
+compras y avisos se conservan en SQLite, independientemente del carrito.
+El servidor asocia las compras y reservas al cliente de la sesión; el portal
+no permite elegir manualmente a otro cliente.
+
+Los registros anteriores a la migración se conservan con sus IDs y sin DNI,
+pendientes de completarlo con un dato real. Esta es la única excepción al DNI
+obligatorio en el registro. No se vinculan automáticamente por nombre para
+evitar confundir personas con nombres repetidos.
+
+Vaciar el carrito no cancela reservas. Una reserva no descuenta unidades ni
+crea una compra. La notificación de reposición se simula y se muestra en el
+carrito del cliente, sin envío de correo.
+
+## Cambio de comportamiento solicitado
+
+Las compras confirmadas no pueden editarse ni deshacerse desde el sistema.
+Se retiraron el historial administrativo del inventario y la ruta HTTP de
+reversión. El historial personal del cliente es solo de consulta.
+La función interna de reversión con TDA Pila se conserva para referencia
+académica, pero no está expuesta por la API ni por la interfaz. Esta decisión
+se aparta de la opción de deshacer que pide la consigna del punto 3.

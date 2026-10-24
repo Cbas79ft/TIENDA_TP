@@ -95,3 +95,11 @@ def mayores(raiz, cantidad, resultado=None):
             resultado.append(raiz.info)
             mayores(raiz.izq, cantidad, resultado)
     return resultado
+
+def minimo(raiz):
+    """Devuelve el menor dato del BST, o None si está vacío."""
+    if raiz is None:
+        return None
+    while raiz.izq is not None:
+        raiz = raiz.izq
+    return raiz.info

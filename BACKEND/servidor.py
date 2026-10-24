@@ -4,6 +4,7 @@
 
 # Permite conexion a la base de datos.
 import sqlite3
+from secrets import token_urlsafe
 # controlar el acceso a recursos compartidos.
 from threading import Lock
 # Permite trabajar con formato JSON.
@@ -18,6 +19,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from BACKEND.recomendaciones import cargar_popularidad, consultar_recomendados
+from BACKEND.stock import IndiceStock
+from BACKEND.transacciones import cargar_pila, registrar_transaccion, consultar_historial
 from BD import persistencia
 from BACKEND.inventario import cargar_inventario, consultar_producto, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
 from BACKEND.esperas import cargar_colas, consultar_esperas, registrar_espera
@@ -26,17 +29,24 @@ from BACKEND.esperas import cargar_colas, consultar_esperas, registrar_espera
 class ManejadorTienda(SimpleHTTPRequestHandler):
     """Atiende consultas de la API y entrega archivos del frontend."""
 
-    def __init__(self, *args, inventario, colas, popularidad, bloqueo, **kwargs):
+    def __init__(self, *args, inventario, colas, popularidad, bloqueo, pila=None, indice_stock=None, sesiones=None, **kwargs):
         """Recibe inventario, colas y bloqueo compartidos entre solicitudes."""
         self.inventario = inventario
         self.colas = colas
         self.popularidad = popularidad
         self.bloqueo = bloqueo
+        self.pila = pila
+        self.indice_stock = indice_stock
+        self.sesiones = sesiones if sesiones is not None else {}
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
         """Consulta productos, clientes o esperas, o entrega el frontend."""
         ruta = urlsplit(self.path).path
+
+        if ruta in ("/api/sesion", "/api/mis-reservas", "/api/mis-notificaciones", "/api/mis-compras", "/api/stock/minimo"):
+            self.responder_portal_get(ruta)
+            return
 
         if ruta == "/api/recomendados":
             self.responder_recomendaciones()
@@ -46,6 +56,8 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         if ruta == "/api/productos":
             with self.bloqueo:
                 productos = consultar_productos(self.inventario)
+                for producto in productos:
+                    producto["popularidad"] = self.popularidad.conteo.get(producto["id_producto"], 0)
 
             self.responder_json(200, productos)
             return
@@ -127,7 +139,7 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         """Registra un producto o una espera recibidos desde el frontend."""
         ruta = urlsplit(self.path).path
 
-        if ruta not in ("/api/productos", "/api/esperas"):
+        if ruta not in ("/api/productos", "/api/esperas", "/api/ingreso", "/api/salir", "/api/compras"):
             self.responder_json(404, {"error": "Ruta inexistente."})
             return
 
@@ -163,8 +175,12 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
             )
             return
 
+        if ruta in ("/api/ingreso", "/api/salir", "/api/compras"):
+            self.responder_portal_post(ruta, datos)
+            return
+
         if ruta == "/api/esperas":
-            self.registrar_espera_api(datos)
+            self.reservar_cliente_actual(datos)
             return
 
         campos = {"nombre", "cantidad_disponible", "precio"}
@@ -191,6 +207,8 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                     datos["cantidad_disponible"],
                     datos["precio"],
                 )
+                if self.indice_stock is not None:
+                    self.indice_stock.actualizar(self.inventario)
         except ValueError as error:
             self.responder_json(400, {"error": str(error)})
             return
@@ -203,45 +221,6 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
 
         # 201 significa que el producto fue creado.
         self.responder_json(201, producto)
-
-    def registrar_espera_api(self, datos):
-        """Valida los IDs y registra una espera bajo el bloqueo compartido."""
-        campos = {"id_cliente", "id_producto"}
-        if not isinstance(datos, dict) or set(datos) != campos:
-            self.responder_json(
-                400,
-                {"error": "Enviá únicamente id_cliente e id_producto."},
-            )
-            return
-
-        # bool no es un ID. El límite evita desbordar los enteros de SQLite.
-        for campo in campos:
-            if (
-                type(datos[campo]) is not int
-                or not 0 < datos[campo] <= 9223372036854775807
-            ):
-                self.responder_json(
-                    400,
-                    {"error": f"{campo} debe ser un entero positivo válido."},
-                )
-                return
-
-        try:
-            with self.bloqueo:
-                espera = registrar_espera(
-                    self.colas, datos["id_cliente"], datos["id_producto"]
-                )
-        except ValueError as error:
-            self.responder_json(400, {"error": str(error)})
-            return
-        except sqlite3.Error:
-            self.log_error("No se pudo registrar la espera en SQLite.")
-            self.responder_json(
-                500, {"error": "No se pudo registrar la espera."}
-            )
-            return
-
-        self.responder_json(201, espera)
 
     def do_PUT(self):
         """Modifica un producto identificado por la ruta /api/productos/ID."""
@@ -317,6 +296,8 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                     datos["precio"],
                     colas=self.colas,
                 )
+                if self.indice_stock is not None:
+                    self.indice_stock.actualizar(self.inventario)
         except ValueError as error:
             self.responder_json(400, {"error": str(error)})
             return
@@ -359,6 +340,8 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
             #Usamos el mismo bloqueo que GET y POST.
             with self.bloqueo:
                 producto = eliminar_producto(self.inventario, id_producto)
+                if self.indice_stock is not None:
+                    self.indice_stock.actualizar(self.inventario)
         except sqlite3.IntegrityError:
             """
             Las claves foráneas impiden borrar un producto que ya figura
@@ -391,6 +374,96 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         #Devolvemos el producto eliminado para que la interfaz  lo informe.
         self.responder_json(200, producto)
 
+    def cliente_actual(self):
+        """Resuelve la identificación de esta pestaña usando su token de ingreso."""
+        id_cliente = self.sesiones.get(self.headers.get("X-Sesion", ""))
+        if id_cliente is None:
+            raise PermissionError("Ingresá tu DNI para continuar.")
+        cliente = persistencia.consultar_cliente(id_cliente)
+        if cliente is None:
+            raise PermissionError("El cliente ya no está registrado.")
+        return cliente
+
+    def responder_portal_get(self, ruta):
+        """Consulta reservas, avisos, compras o el mínimo del árbol de stock."""
+        try:
+            with self.bloqueo:
+                if ruta == "/api/stock/minimo":
+                    resultado = self.indice_stock.consultar_minimo(self.inventario)
+                else:
+                    cliente = self.cliente_actual()
+                    id_cliente = cliente["id_cliente"]
+                    if ruta == "/api/sesion":
+                        resultado = cliente
+                    elif ruta == "/api/mis-notificaciones":
+                        resultado = persistencia.leer_notificaciones(id_cliente)
+                    elif ruta == "/api/mis-compras":
+                        resultado = [c for c in consultar_historial(self.pila) if c["id_cliente"] == id_cliente]
+                    else:
+                        resultado = []
+                        for producto in consultar_productos(self.inventario):
+                            for turno, espera in enumerate(consultar_esperas(self.colas, producto["id_producto"]), 1):
+                                if espera["id_cliente"] == id_cliente:
+                                    resultado.append({**espera, "nombre": producto["nombre"], "turno": turno})
+            self.responder_json(200, resultado)
+        except PermissionError as error:
+            self.responder_json(401, {"error": str(error)})
+        except sqlite3.Error:
+            self.responder_json(500, {"error": "No se pudieron consultar los datos."})
+
+    def responder_portal_post(self, ruta, datos):
+        """Ingreso por DNI y confirmación de compras con las estructuras compartidas."""
+        try:
+            if not isinstance(datos, dict):
+                raise ValueError("El contenido debe ser un objeto JSON.")
+            with self.bloqueo:
+                if ruta == "/api/ingreso":
+                    if set(datos) not in ({"dni"}, {"dni", "nombre", "apellido"}):
+                        raise ValueError("Enviá DNI y, si sos nuevo, nombre y apellido.")
+                    cliente = persistencia.ingresar_cliente(datos["dni"], datos.get("nombre"), datos.get("apellido"))
+                    if cliente is None:
+                        self.responder_json(404, {"error": "DNI no registrado. Completá nombre y apellido.", "registrar": True})
+                        return
+                    token = token_urlsafe(32)
+                    self.sesiones[token] = cliente["id_cliente"]
+                    resultado = {"cliente": cliente, "token": token}
+                else:
+                    cliente = self.cliente_actual()
+                    if ruta == "/api/salir":
+                        self.sesiones.pop(self.headers.get("X-Sesion"), None)
+                        resultado = {"mensaje": "Ingreso cerrado."}
+                    else:
+                        if set(datos) != {"productos"}:
+                            raise ValueError("Enviá únicamente los productos y sus cantidades.")
+                        resultado = registrar_transaccion(self.inventario, self.pila, self.popularidad, self.indice_stock, cliente["id_cliente"], datos["productos"])
+                        resultado["menor_stock"] = self.indice_stock.consultar_minimo(self.inventario)
+            self.responder_json(201 if ruta == "/api/compras" else 200, resultado)
+        except PermissionError as error:
+            self.responder_json(401, {"error": str(error)})
+        except (ValueError, OverflowError) as error:
+            self.responder_json(400, {"error": str(error)})
+        except sqlite3.Error:
+            self.responder_json(500, {"error": "No se pudo confirmar la operación. Actualizá antes de reintentar."})
+
+    def reservar_cliente_actual(self, datos):
+        """Asocia la reserva al cliente del ingreso; no admite IDs elegidos a mano."""
+        try:
+            if not isinstance(datos, dict) or set(datos) != {"id_producto"}:
+                raise ValueError("Enviá únicamente el identificador del producto.")
+            id_producto = datos["id_producto"]
+            if type(id_producto) is not int or not 0 < id_producto <= 9223372036854775807:
+                raise ValueError("El producto debe tener un ID entero positivo válido.")
+            with self.bloqueo:
+                cliente = self.cliente_actual()
+                espera = registrar_espera(self.colas, cliente["id_cliente"], id_producto)
+            self.responder_json(201, espera)
+        except PermissionError as error:
+            self.responder_json(401, {"error": str(error)})
+        except ValueError as error:
+            self.responder_json(400, {"error": str(error)})
+        except sqlite3.Error:
+            self.responder_json(500, {"error": "No se pudo registrar la reserva. Consultá tus esperas antes de reintentar."})
+
     def responder_recomendaciones(self):
         """Devuelve los productos más populares: GET /api/recomendados?cantidad=5."""
         consulta = parse_qs(urlsplit(self.path).query)
@@ -416,9 +489,13 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
     carpeta_frontend = Path(__file__).resolve().parent.parent / "FRONTEND"
 
     # Se carga una sola vez al iniciar, no en cada solicitud.
+    persistencia.inicializar_bd()
     inventario = cargar_inventario()
     colas = cargar_colas()
     popularidad = cargar_popularidad()
+    pila = cargar_pila()
+    indice_stock = IndiceStock(inventario)
+    sesiones = {}
     bloqueo = Lock()
 
     # Cada solicitud recibe el mismo inventario y carpeta del frontend.
@@ -427,6 +504,9 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
         inventario=inventario,
         colas=colas,
         popularidad=popularidad,
+        pila=pila,
+        indice_stock=indice_stock,
+        sesiones=sesiones,
         bloqueo=bloqueo,
         directory=str(carpeta_frontend),
     )

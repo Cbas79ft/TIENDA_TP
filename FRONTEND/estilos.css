@@ -645,3 +645,37 @@ body[data-pagina="compra"] footer p {
         flex-direction:column;
     }
 }
+/* Ingreso, carrito y reservas del portal del cliente. */
+body[data-pagina="compra"] [hidden] { display:none !important; }
+body[data-pagina="compra"] .boton-secundario { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+body[data-pagina="compra"] .boton-portal { background:var(--tinta);color:white;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer; }
+body[data-pagina="compra"] button:disabled { opacity:.5;cursor:not-allowed; }
+body[data-pagina="compra"] .acceso-cliente { max-width:510px;margin:35px auto;padding:30px;background:white;border:1px solid var(--linea);border-radius:16px; }
+body[data-pagina="compra"] .acceso-cliente h1 { font-size:30px; }
+body[data-pagina="compra"] .acceso-cliente p { line-height:1.6;color:var(--secundario); }
+body[data-pagina="compra"] .acceso-cliente label { display:block;margin:15px 0 7px; }
+body[data-pagina="compra"] .acceso-cliente .boton-portal { margin-top:20px; }
+body[data-pagina="compra"] .identidad-cliente { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:25px; }
+body[data-pagina="compra"] #mensaje-portal:not(:empty) { padding:15px 18px;background:#edf7df;border:1px solid #cce3bd;border-radius:10px;line-height:1.6; }
+body[data-pagina="compra"] .error { color:#a2443b; }
+body[data-pagina="compra"] #mensaje-portal.error { background:#fff0ee;border-color:#edc6c0; }
+body[data-pagina="compra"] .bloque-carrito { margin-top:24px; }
+body[data-pagina="compra"] .lista-carrito { list-style:none;padding:0;margin:18px 0; }
+body[data-pagina="compra"] .lista-carrito li { padding:18px 0;border-bottom:1px solid var(--linea);overflow-wrap:anywhere; }
+body[data-pagina="compra"] .lista-carrito li:last-child { border-bottom:0; }
+body[data-pagina="compra"] .lista-carrito h3 { margin:0 0 8px;font-size:17px; }
+body[data-pagina="compra"] .lista-carrito p { margin:6px 0;font-size:14px; }
+body[data-pagina="compra"] .fila-carrito { display:flex;justify-content:space-between;gap:18px;align-items:center; }
+body[data-pagina="compra"] .controles-carrito { display:flex;align-items:center;gap:15px;flex-shrink:0; }
+body[data-pagina="compra"] .controles-carrito label { font-size:12px; }
+body[data-pagina="compra"] .controles-carrito input { display:block;max-width:90px;margin-top:5px; }
+body[data-pagina="compra"] .pie-carrito { display:flex;align-items:center;gap:15px;flex-wrap:wrap;border-top:1px solid var(--linea);padding-top:20px; }
+body[data-pagina="compra"] .pie-carrito .total-carrito { margin-right:auto; }
+body[data-pagina="compra"] :focus-visible { outline:3px solid #247f69;outline-offset:3px; }
+@media(max-width:650px) {
+    body[data-pagina="compra"] .fila-carrito { flex-direction:column;align-items:stretch; }
+    body[data-pagina="compra"] .controles-carrito { flex-wrap:wrap;justify-content:space-between; }
+    body[data-pagina="compra"] .encabezado-interior { flex-wrap:wrap;gap:12px; }
+    body[data-pagina="compra"] .encabezado-interior nav { flex-wrap:wrap;gap:8px; }
+    body[data-pagina="compra"] .acceso-cliente { padding:22px; }
+}

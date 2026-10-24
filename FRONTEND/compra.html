@@ -1,59 +1,25 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Catálogo de compra de Tienda TP con popularidad de productos.">
-    <title>Comprar | Tienda TP</title>
-    <link rel="stylesheet" href="estilos.css">
-    <script src="app.js" defer></script>
-</head>
-<body data-pagina="compra">
-    <header class="encabezado">
-        <div class="encabezado-interior">
-            <a class="marca" href="/" aria-label="Tienda TP, inventario"><span class="logo">T</span><span>TIENDA<span class="marca-detalle">TP</span></span></a>
-            <nav aria-label="Secciones"><a href="/">Inventario</a><a class="activo" href="/compra.html">Comprar</a></nav>
-        </div>
-    </header>
-
-    <main class="contenedor">
-        <section class="introduccion">
-            <div>
-                <p class="antetitulo">ENCONTRÁ LO QUE BUSCÁS</p>
-                <h1>Comprar productos</h1>
-                <p class="descripcion">Explorá el catálogo y mirá cuántas compras tiene cada producto.</p>
-            </div>
-
-        </section>
-
-        <section class="panel-carrito" aria-labelledby="titulo-carrito">
-            <div>
-                <h2 id="titulo-carrito">Tu carrito</h2>
-                <p id="resumen-carrito">Todavía no agregaste productos.</p>
-            </div>
-            <div class="total-carrito"><span>Total</span><strong id="total-carrito">$ 0</strong></div>
-            <button id="vaciar-carrito" class="boton-secundario" type="button" disabled>Vaciar carrito</button>
-        </section>
-
-        <section class="catalogo" aria-labelledby="titulo-catalogo">
-            <div class="cabecera-catalogo">
-                <div><h2 id="titulo-catalogo">Todos los productos</h2><p id="cantidad-resultados">Cargando catálogo…</p></div>
-                <div class="filtros">
-                    <label for="buscar">Buscar producto</label>
-                    <input id="buscar" type="search" placeholder="Nombre o ID" autocomplete="off" disabled>
-                    <label for="orden">Ordenar por</label>
-                    <select id="orden" disabled>
-                        <option value="popularidad">Más populares</option>
-                        <option value="nombre">Nombre</option>
-                        <option value="precio">Menor precio</option>
-                    </select>
-                </div>
-            </div>
-            <p id="estado" role="status" aria-live="polite">Cargando productos…</p>
-            <div id="productos" class="productos" aria-live="polite"></div>
-            <p class="nota" id="nota-popularidad">La popularidad indica en cuántas compras figura cada producto; no representa unidades vendidas.</p>
-        </section>
-        <footer><span>TIENDA TP</span><p>Catálogo de productos</p></footer>
-    </main>
-</body>
-</html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprar | Tienda TP</title><link rel="stylesheet" href="estilos.css"><script src="portal.js" defer></script></head>
+<body data-pagina="compra" data-vista="catalogo">
+<header class="encabezado"><div class="encabezado-interior">
+<a class="marca" href="/compra.html"><span class="logo">T</span><span>TIENDA<span class="marca-detalle">TP</span></span></a>
+<nav aria-label="Secciones"><a href="/">Inventario</a><a href="/compra.html" class="activo" aria-current="page">Comprar</a><a href="/carrito.html">Ver carrito</a></nav>
+</div></header>
+<div class="contenedor">
+<section id="ingreso" class="acceso-cliente" aria-labelledby="titulo-ingreso">
+<p class="antetitulo">BIENVENIDO A TIENDA TP</p><h1 id="titulo-ingreso">Ingresá para comprar</h1>
+<p>Ingresá tu DNI. Si es tu primera visita, te pediremos nombre y apellido.</p>
+<form id="formulario-ingreso"><label for="dni-ingreso">DNI</label>
+<input id="dni-ingreso" name="dni" type="text" inputmode="numeric" autocomplete="off" maxlength="12" required placeholder="Ej.: 12345678">
+<div id="datos-nuevo-cliente" hidden><label for="nombre-ingreso">Nombre</label><input id="nombre-ingreso" name="nombre" autocomplete="given-name" maxlength="100">
+<label for="apellido-ingreso">Apellido</label><input id="apellido-ingreso" name="apellido" autocomplete="family-name" maxlength="100"></div>
+<button class="boton-portal" id="continuar-ingreso" type="submit">Continuar</button>
+<p id="estado-ingreso" role="status" aria-live="polite"></p></form></section>
+<div id="identidad-cliente" class="identidad-cliente" hidden><span id="nombre-cliente"></span><button id="salir-cliente" type="button" class="boton-secundario">Salir</button></div>
+<p id="mensaje-portal" role="status" aria-live="polite"></p>
+<main id="portal-contenido" hidden>
+<section class="introduccion"><div><p class="antetitulo">ENCONTRÁ LO QUE BUSCÁS</p><h1>Comprar productos</h1><p class="descripcion">Agregá tus productos al carrito o reservá los que no tienen stock.</p></div></section>
+<section class="panel-carrito" aria-labelledby="titulo-carrito"><div><h2 id="titulo-carrito">Tu carrito</h2><p id="resumen-carrito">Todavía no agregaste productos.</p></div><div class="total-carrito"><span>Total estimado</span><strong id="total-carrito">$ 0</strong></div><a id="ver-carrito" class="boton-secundario" href="/carrito.html">Ver carrito</a></section>
+<section class="catalogo" aria-labelledby="titulo-catalogo"><div class="cabecera-catalogo"><div><h2 id="titulo-catalogo">Todos los productos</h2><p id="cantidad-resultados"></p></div><div class="filtros"><label for="buscar">Buscar producto</label><input id="buscar" type="search" placeholder="Nombre o ID"><label for="orden">Ordenar por</label><select id="orden"><option value="popularidad">Más populares</option><option value="nombre">Nombre</option><option value="precio">Menor precio</option></select></div></div><p id="estado-catalogo" role="status"></p><div id="productos" class="productos"></div></section>
+<button id="actualizar-portal" class="boton-secundario" type="button">Actualizar</button></main><footer><span>TIENDA TP</span><p>Tu tienda, en orden.</p></footer></div></body></html>
