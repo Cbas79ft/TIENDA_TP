@@ -1,7 +1,7 @@
 """
 Popularidad de productos y recomendaciones con el TAD árbol Binario de búsqueda.
-La popularidad de un producto es la cantidad de compras en las que figura (cada compra cuenta
-una vez por producto, sin importar las unidades).
+La popularidad de un producto es la cantidad de unidades vendidas: cada compra suma las
+unidades que incluye y deshacer una compra las resta.
 El árbol guarda claves (popularidad, id_producto). Incluir el id hace que la clave sea única
 aunque varios producto tengan la misma popularidad, y el recorrido inorden inverso entrega primero los
 más populares.
@@ -54,26 +54,42 @@ def _cambiar_popularidad(estado, id_producto, variacion):
         #Sin compras, el producto sale del árbol de popularidad
         del estado.conteo[id_producto]
 
-def registrar_compra(estado, ids_productos):
+def _unidades_por_producto(productos):
     """
-    Suma una compra a cada producto distinto de la lista recibida.
-    Debe llamarse DESPUÉS de confirmar la compra en SQLite, bajo el bloqueo del servidor, para 
-    que el árbol no cambie si el guardado falla.
+    Suma las unidades de cada producto de una compra: devuelve {id_producto: unidades}.
+    Recibe la lista de detalles de la compra (diccionarios con id_producto y cantidad).
     """
-    for id_producto in set(ids_productos):
-        _cambiar_popularidad(estado, id_producto, 1)
+    unidades = {}
+    for detalle in productos:
+        cantidad = detalle["cantidad"]
+        if type(cantidad) is not int or cantidad <= 0:
+            raise ValueError("Las unidades de cada producto deben ser un entero positivo.")
+        id_producto = detalle["id_producto"]
+        unidades[id_producto] = unidades.get(id_producto, 0) + cantidad
+    return unidades
 
-def revertir_compra(estado, ids_productos):
+
+def registrar_compra(estado, productos):
     """
-    Resta una compra a cada producto distinto de la lista recibida.
+    Suma las unidades vendidas de cada producto de la compra.
+    Debe llamarse DESPUÉS de confirmar la compra en SQLite, bajo el bloqueo del servidor,
+    para que el árbol no cambie si el guardado falla.
+    """
+    for id_producto, unidades in _unidades_por_producto(productos).items():
+        _cambiar_popularidad(estado, id_producto, unidades)
+
+
+def revertir_compra(estado, productos):
+    """
+    Resta las unidades vendidas de cada producto de la compra.
     Se valida todo antes de modificar, para no dejar el árbol a medias.
     """
-    distintos = set(ids_productos)
-    for id_producto in distintos:
-        if estado.conteo.get(id_producto, 0) < 1:
-            raise ValueError(f"El producto #{id_producto} no tiene compras para revertir.")
-    for id_producto in distintos:
-        _cambiar_popularidad(estado, id_producto, -1)
+    unidades = _unidades_por_producto(productos)
+    for id_producto, cantidad in unidades.items():
+        if estado.conteo.get(id_producto, 0) < cantidad:
+            raise ValueError(f"El producto #{id_producto} no tiene unidades vendidas suficientes para revertir.")
+    for id_producto, cantidad in unidades.items():
+        _cambiar_popularidad(estado, id_producto, -cantidad)
 
 def consultar_recomendados(estado, inventario, cantidad=5):
     """

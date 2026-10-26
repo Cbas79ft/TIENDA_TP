@@ -360,14 +360,14 @@ def eliminar_espera(id_espera):
 
 def leer_popularidad():
     """
-    Cuenta en cuantas compras figura cada producto.
-    Cuenta transacciones distintas para no inflar el resultado si hubiera
-    detalles repetidos de un mismo producto dentro de una compra.
+    Suma las unidades vendidas de cada producto en todas las compras guardadas.
+    La popularidad no se guarda en la tabla productos: se calcula desde
+    detalle_transaccion, así siempre coincide con el historial (y con deshacer).
     """
     conexion = conectar()
     try:
         filas = conexion.execute(
-            "SELECT id_producto, COUNT(DISTINCT id_transaccion) AS popularidad "
+            "SELECT id_producto, SUM(cantidad) AS popularidad "   # <-- antes: COUNT(DISTINCT id_transaccion)
             "FROM detalle_transaccion "
             "GROUP BY id_producto "
             "ORDER BY id_producto"

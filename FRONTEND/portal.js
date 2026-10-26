@@ -129,7 +129,7 @@ function mostrarCatalogo() {
     for (const producto of visibles) {
         const tarjeta = nodo('article', undefined, 'producto');
         const cabecera = nodo('div', undefined, 'producto-superior');
-        cabecera.append(nodo('span', `Producto #${producto.id_producto}`, 'id-producto'), nodo('span', `${producto.popularidad} compras`, 'etiqueta-popular'));
+        cabecera.append(nodo('span', `Producto #${producto.id_producto}`, 'id-producto'), nodo('span', `${producto.popularidad} ${producto.popularidad === 1 ? 'vendido' : 'vendidos'}`, 'etiqueta-popular'));
         const enEspera = reservas.some(r => r.id_producto === producto.id_producto);
         const cantidad = sesion.carrito.find(d => d.id_producto === producto.id_producto)?.cantidad || 0;
         const disponible = producto.cantidad_disponible > 0;

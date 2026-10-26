@@ -26,8 +26,8 @@
 11. Al iniciar se reconstruye la pila leyendo las compras por id_transaccion
     ascendente. Compras, reversiones, inventario y colas comparten el bloqueo
     del servidor. Las estructuras se manipulan mediante sus primitivas.
-12. Para el futuro árbol de popularidad, cada compra cuenta una vez por producto,
-    independientemente de las unidades. Deshacer revierte ese incremento.
+12. Para el árbol de popularidad, cada compra suma las unidades vendidas de cada
+    producto. Deshacer resta esas mismas unidades.
 
 ## Implementación
 
@@ -37,7 +37,7 @@ La reversión de la cima devuelve unidades al stock actual y atiende al primer
 cliente de cada cola cuyo producto pasa de cero a positivo, guardando también
 un aviso persistente. Se reconstruyen las estructuras al iniciar el servidor.
 
-El árbol de popularidad cuenta compras distintas por producto. Un segundo BST
+El árbol de popularidad suma las unidades vendidas por producto. Un segundo BST
 ordena claves (stock, id_producto) para consultar las menores existencias.
 
 ## Ingreso y carrito

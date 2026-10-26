@@ -121,7 +121,7 @@ def registrar_transaccion(inventario, pila, popularidad, indice_stock, id_client
     ids = [d['id_producto'] for d in compra['productos']]
     sincronizar_productos(inventario, ids)
     apilar(pila, compra)
-    recomendaciones.registrar_compra(popularidad, ids)
+    recomendaciones.registrar_compra(popularidad, compra['productos'])
     indice_stock.actualizar(inventario)
     return deepcopy(compra)
 
@@ -132,14 +132,14 @@ def deshacer_transaccion(inventario, colas, pila, popularidad, indice_stock, id_
     if ultima['id_transaccion'] != id_transaccion:
         raise ValueError('La última compra cambió. Actualizá el historial.')
     ids = [d['id_producto'] for d in ultima['productos']]
-    if any(popularidad.conteo.get(id_producto, 0) < 1 for id_producto in ids):
+    if any(popularidad.conteo.get(d['id_producto'], 0) < d['cantidad'] for d in ultima['productos']):
         raise ValueError('El árbol de popularidad no coincide con las compras.')
     atendidas = persistencia.revertir_ultima_compra(id_transaccion)
     sincronizar_productos(inventario, ids)
     for espera in atendidas:
         confirmar_atencion(colas, espera['id_producto'])
     desapilar(pila)
-    recomendaciones.revertir_compra(popularidad, ids)
+    recomendaciones.revertir_compra(popularidad, ultima['productos'])
     indice_stock.actualizar(inventario)
     return {'transaccion': ultima, 'notificaciones': atendidas}
 
