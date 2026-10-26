@@ -44,6 +44,12 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         """Consulta productos, clientes o esperas, o entrega el frontend."""
         ruta = urlsplit(self.path).path
 
+        if ruta == "/":
+            self.send_response(302)
+            self.send_header("Location", "/compra.html")
+            self.end_headers()
+            return
+
         if ruta in ("/api/sesion", "/api/mis-reservas", "/api/mis-notificaciones", "/api/mis-compras", "/api/stock/minimo"):
             self.responder_portal_get(ruta)
             return
