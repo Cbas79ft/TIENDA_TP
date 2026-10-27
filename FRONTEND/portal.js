@@ -68,8 +68,8 @@ $('#dni-ingreso').addEventListener('input', () => {
     $('#nombre-ingreso').required = false; $('#apellido-ingreso').required = false;
     $('#estado-ingreso').textContent = '';
 });
-// Filtros al escribir: el DNI solo admite números; nombre y apellido, solo letras, espacios, guiones y apóstrofes.
-$('#dni-ingreso').addEventListener('input', evento => {evento.target.value = evento.target.value.replace(/[^\p{L} ]/gu, '');
+// Filtros al escribir: el DNI solo admite números; nombre y apellido.
+$('#dni-ingreso').addEventListener('input', evento => {evento.target.value = evento.target.value.replace(/[^0-9]/g, '');
 });
 for (const selector of ['#nombre-ingreso', '#apellido-ingreso']) {
     $(selector).addEventListener('input', evento => {evento.target.value = evento.target.value.replace(/[^\p{L} ]/gu, '');
