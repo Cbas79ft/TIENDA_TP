@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comprar | Tienda TP</title><link rel="stylesheet" href="estilos.css"><script src="portal.js" defer></script></head>
-<body data-pagina="compra" data-vista="catalogo">
+<title>Comprar | eShop Core</title><link rel="icon" type="image/png" href="/img/logo.png"><body data-pagina="compra" data-vista="catalogo">
 <header class="encabezado"><div class="encabezado-interior">
-<a class="marca" href="/compra.html"><span class="logo">T</span><span>TIENDA<span class="marca-detalle">TP</span></span></a>
-<nav aria-label="Secciones"><a href="/index.html">Inventario</a><a href="/compra.html" class="activo" aria-current="page">Comprar</a><a href="/carrito.html">Ver carrito</a></nav>
+<a class="marca" href="/compra.html" aria-label="eShop Core, inicio"><img class="logo-imagen" src="/img/logo.png" alt="eShop Core" width="560" height="92"></a><nav aria-label="Secciones"><a href="/compra.html" class="activo" aria-current="page">Comprar</a><a href="/carrito.html">Ver carrito</a></nav>
 </div></header>
 <div class="contenedor">
 <section id="ingreso" class="acceso-cliente" aria-labelledby="titulo-ingreso">
-<p class="antetitulo">BIENVENIDO A TIENDA TP</p><h1 id="titulo-ingreso">Ingresá para comprar</h1>
+<p class="antetitulo">BIENVENIDO A ESHOP CORE</p><h1 id="titulo-ingreso">Ingresá para comprar</h1>
 <p>Ingresá tu DNI. Si es tu primera visita, te pediremos nombre y apellido.</p>
 <form id="formulario-ingreso"><label for="dni-ingreso">DNI</label>
 <input id="dni-ingreso" name="dni" type="text" inputmode="numeric" autocomplete="off" maxlength="12" required placeholder="Ej.: 12345678">
@@ -22,19 +20,14 @@
 <section class="introduccion"><div><p class="antetitulo">ENCONTRÁ LO QUE BUSCÁS</p><h1>Comprar productos</h1><p class="descripcion">Agregá tus productos al carrito o reservá los que no tienen stock.</p></div></section>
 <section class="panel-carrito" aria-labelledby="titulo-carrito"><div><h2 id="titulo-carrito">Tu carrito</h2><p id="resumen-carrito">Todavía no agregaste productos.</p></div><div class="total-carrito"><span>Total estimado</span><strong id="total-carrito">$ 0</strong></div><a id="ver-carrito" class="boton-secundario" href="/carrito.html">Ver carrito</a></section>
 <section class="catalogo" aria-labelledby="titulo-catalogo"><div class="cabecera-catalogo"><div><h2 id="titulo-catalogo">Todos los productos</h2><p id="cantidad-resultados"></p></div><div class="filtros"><label for="buscar">Buscar producto</label><input id="buscar" type="search" placeholder="Nombre o ID"><label for="orden">Ordenar por</label><select id="orden"><option value="popularidad">Más populares</option><option value="nombre">Nombre</option><option value="precio">Menor precio</option></select></div></div><p id="estado-catalogo" role="status"></p><div id="productos" class="productos"></div></section>
-<button id="actualizar-portal" class="boton-secundario" type="button">Actualizar</button></main><footer><span>TIENDA TP</span><p>Tu tienda, en orden.</p></footer></div>
+<button id="actualizar-portal" class="boton-secundario" type="button">Actualizar</button></main><footer><span>eShop Core</span><p>Tu tienda, en orden.</p></footer></div>
     </div>  <!-- cierre del div.contenedor -->
 
     <footer class="pie-pagina">
         <div class="pie-interior">
 
             <div class="pie-seccion pie-marca">
-                <svg class="pie-logo" viewBox="0 0 40 40" aria-hidden="true">
-                    <rect width="40" height="40" rx="12" fill="currentColor"/>
-                    <path d="M12 15h16l-1 15H13l-1-15zm4 0v-3a4 4 0 0 1 8 0v3"
-                          fill="none" stroke="#102b29" stroke-width="2" stroke-linejoin="round"/>
-                </svg>
-                <span class="pie-nombre">TIENDA<span class="pie-detalle">TP</span></span>
+                <img class="pie-logo-imagen" src="/img/logo-claro.png" alt="eShop Core" width="560" height="92">
                 <p class="pie-slogan">Tu tienda, en orden. Siempre.</p>
             </div>
 
@@ -59,7 +52,6 @@
             <div class="pie-seccion">
                 <h3 class="pie-titulo">Navegación</h3>
                 <ul class="pie-lista">
-                    <li><a href="/index.html">Inventario</a></li>
                     <li><a href="/compra.html">Comprar</a></li>
                     <li><a href="/carrito.html">Ver carrito</a></li>
                 </ul>
@@ -67,7 +59,7 @@
 
         </div>
         <div class="pie-copyright">
-            <p>© 2026 Tienda TP · Trabajo Práctico Final · Todos los derechos reservados.</p>
+            <p>© 2026 eShop Core · Trabajo Práctico Final · Todos los derechos reservados.</p>
         </div>
     </footer>
 

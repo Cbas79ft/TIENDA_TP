@@ -770,6 +770,21 @@ body[data-pagina="compra"] footer p {
         padding: 36px 20px 24px;
     }
 }
+
+/* Logotipo de eShop Core (imagen que incluye el nombre) */
+.logo-imagen {
+    display: block;
+    height: 40px;
+    width: auto;
+}
+
+.pie-logo-imagen {
+    display: block;
+    align-self: flex-start;
+    height: 44px;
+    width: auto;
+}
+
 /* Ingreso, carrito y reservas del portal del cliente. */
 body[data-pagina="compra"] [hidden] { display:none !important; }
 body[data-pagina="compra"] .boton-secundario { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
