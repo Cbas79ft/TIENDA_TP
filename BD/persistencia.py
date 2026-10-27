@@ -386,6 +386,17 @@ def normalizar_dni(dni):
         raise ValueError("El DNI debe contener siete u ocho dígitos.")
     return dni
 
+def normalizar_nombre(valor, campo):
+    """Valida un nombre o apellido: solo letras, espacios, guiones y apóstrofes."""
+    if not isinstance(valor, str):
+        raise ValueError(f"Ingresá el {campo} como texto.")
+    valor = ' '.join(valor.split())  # saca espacios de más al principio, al final y entre palabras
+    if not 2 <= len(valor) <= 50:
+        raise ValueError(f"El {campo} debe tener entre 2 y 50 caracteres.")
+    for caracter in valor:
+        if not (caracter.isalpha() or caracter == ' '):
+            raise ValueError(f"El {campo} solo puede tener letras y espacios.")
+    return valor
 
 def ingresar_cliente(dni, nombre=None, apellido=None):
     """Recupera un cliente por DNI o registra uno nuevo con nombre y apellido."""
@@ -399,13 +410,10 @@ def ingresar_cliente(dni, nombre=None, apellido=None):
                 return dict(fila)
             if nombre is None and apellido is None:
                 return None
-            for valor in (nombre, apellido):
-                if not isinstance(valor, str) or not valor.strip() or len(valor.strip()) > 100:
-                    raise ValueError('Completá nombre y apellido (hasta 100 caracteres).')
-            cursor = conexion.execute('INSERT INTO clientes(dni,nombre,apellido) VALUES(?,?,?)',
-                                      (dni, nombre.strip(), apellido.strip()))
-            return dict(conexion.execute('SELECT * FROM clientes WHERE id_cliente=?',
-                                         (cursor.lastrowid,)).fetchone())
+            nombre = normalizar_nombre(nombre, 'nombre')
+            apellido = normalizar_nombre(apellido, 'apellido')
+            cursor = conexion.execute('INSERT INTO clientes(dni,nombre,apellido) VALUES(?,?,?)', (dni, nombre, apellido))
+            return dict(conexion.execute('SELECT * FROM clientes WHERE id_cliente=?',(cursor.lastrowid,)).fetchone())
     finally:
         conexion.close()
 

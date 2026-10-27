@@ -10,9 +10,9 @@
 <p class="antetitulo">BIENVENIDO A ESHOP CORE</p><h1 id="titulo-ingreso">Ingresá para comprar</h1>
 <p>Ingresá tu DNI. Si es tu primera visita, te pediremos nombre y apellido.</p>
 <form id="formulario-ingreso"><label for="dni-ingreso">DNI</label>
-<input id="dni-ingreso" name="dni" type="text" inputmode="numeric" autocomplete="off" maxlength="12" required placeholder="Ej.: 12345678">
-<div id="datos-nuevo-cliente" hidden><label for="nombre-ingreso">Nombre</label><input id="nombre-ingreso" name="nombre" autocomplete="given-name" maxlength="100">
-<label for="apellido-ingreso">Apellido</label><input id="apellido-ingreso" name="apellido" autocomplete="family-name" maxlength="100"></div>
+<input id="dni-ingreso" name="dni" type="text" inputmode="numeric" autocomplete="off" maxlength="8" pattern="[0-9]{7,8}" title="El DNI tiene 7 u 8 números, sin puntos ni letras." required placeholder="Ej.: 12345678">
+<div id="datos-nuevo-cliente" hidden><label for="nombre-ingreso">Nombre</label><input id="nombre-ingreso" name="nombre" autocomplete="given-name" minlength="2" maxlength="50" title="Solo letras y espacios.">
+<label for="apellido-ingreso">Apellido</label><input id="apellido-ingreso" name="apellido" autocomplete="family-name" minlength="2" maxlength="50" title="Solo letras y espacios."></div>
 <button class="boton-portal" id="continuar-ingreso" type="submit">Continuar</button>
 <p id="estado-ingreso" role="status" aria-live="polite"></p></form></section>
 <div id="identidad-cliente" class="identidad-cliente" hidden><span id="nombre-cliente"></span><button id="salir-cliente" type="button" class="boton-secundario">Salir</button></div>

@@ -67,9 +67,6 @@ body[data-pagina="inventario"] .agotado { background: #fff1e6; color: #8d4e1d; }
 body[data-pagina="inventario"] .estado { text-align: center; padding: 48px 24px; margin: 0; color: var(--secundario); border-top: 1px solid var(--linea); }
 body[data-pagina="inventario"] .estado.error { color: #9b3434; background: #fff8f8; }
 body[data-pagina="inventario"] .pie-catalogo { display: flex; justify-content: space-between; gap: 16px; padding: 15px 24px; border-top: 1px solid var(--linea); color: var(--secundario); font-size: 11px; }
-body[data-pagina="inventario"] .pie-pagina { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 24px 0 10px; color: var(--secundario); font-size: 11px; }
-body[data-pagina="inventario"] .pie-pagina > span { letter-spacing: 1px; font-weight: 700; }
-body[data-pagina="inventario"] .pie-pagina p { margin: 0; }
 body[data-pagina="inventario"] .solo-lectores, body[data-pagina="inventario"] .saltar-contenido:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 body[data-pagina="inventario"] .saltar-contenido:focus { position: fixed; top: 12px; left: 12px; padding: 12px; z-index: 10; color: var(--tinta); background: white; }
 @media (max-width: 700px) {
@@ -85,7 +82,7 @@ body[data-pagina="inventario"] .saltar-contenido:focus { position: fixed; top: 1
     body[data-pagina="inventario"] .tarjeta span { font-size: 10px; }
     body[data-pagina="inventario"] .barra-catalogo { padding: 20px 16px; flex-direction: column; align-items: stretch; gap: 16px; }
     body[data-pagina="inventario"] .buscador { width: 100%; }
-    body[data-pagina="inventario"] .pie-catalogo, body[data-pagina="inventario"] .pie-pagina { flex-direction: column; gap: 6px; }
+    body[data-pagina="inventario"] .pie-catalogo { flex-direction: column; gap: 6px; }
     body[data-pagina="inventario"] .pie-catalogo { padding: 14px 16px; }
 }
 
