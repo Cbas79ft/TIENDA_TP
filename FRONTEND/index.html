@@ -14,7 +14,7 @@
     <title>Inventario | eShop Core</title>
     <link rel="icon" type="image/png" href="/img/logo.png">
     <link rel="stylesheet" href="estilos.css">
-    <script src="app.js" defer></script>
+    <script src="app.js?v=20261028-2" defer></script>
 </head>
 <body data-pagina="inventario">
     <a class="saltar-contenido" href="#contenido">Ir al inventario</a>
@@ -46,12 +46,6 @@
             <article class="tarjeta"><p>Unidades disponibles</p><strong id="total-unidades">—</strong><span>Stock total del inventario</span></article>
             <article class="tarjeta tarjeta-destacada"><p>Productos sin stock</p><strong id="sin-stock">—</strong><span>Referencias para reponer</span></article>
         </section>
-
-        <aside id="notificacion-reposicion" class="notificacion-reposicion" role="status" aria-live="polite" hidden>
-            <h2>Cliente notificado</h2>
-            <p id="aviso-reposicion"></p>
-            <p>La notificación es simulada. No reserva unidades ni registra una compra.</p>
-        </aside>
 
             <!-- Formulario para registrar productos mediante la API. -->
             <section class="alta-producto" aria-labelledby="titulo-alta">

@@ -11,7 +11,6 @@
  * Gestiona los estados de carga, error, inventario vacío y búsqueda sin
  * resultados. Envía altas con POST, modificaciones con PUT y bajas con DELETE.
  * El backend se encarga de escribir en SQLite y actualizar el TDA.
- * Muestra avisos de notificación simulada cuando se repone un producto.
  *
  */
 
@@ -283,11 +282,6 @@ function iniciarInventario() {
             mensajeProducto.textContent = esEdicion
                 ? `Producto #${resultado.id_producto} actualizado correctamente.`
                 : `Producto "${resultado.nombre}" guardado con ID ${resultado.id_producto}.`;
-
-            if (resultado.notificacion) {
-                document.querySelector("#aviso-reposicion").textContent = resultado.notificacion.mensaje;
-                document.querySelector("#notificacion-reposicion").hidden = false;
-            }
 
             await cargarProductos();
         } catch (error) {

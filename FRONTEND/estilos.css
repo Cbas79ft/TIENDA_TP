@@ -213,14 +213,10 @@ body[data-pagina="inventario"] .detalle-espera { display: block; margin-top: 5px
 body[data-pagina="inventario"] .primero-espera { display: inline-block; margin-left: 10px; padding: 3px 8px; border-radius: 20px; color: #236141; background: #eaf6ef; font-size: 11px; }
 body[data-pagina="inventario"] .boton-espera { margin: 6px 0 0 6px; border: 1px solid #9bc9ba; border-radius: 7px; padding: 6px 12px; background: #e9f4ef; color: #193c3a; cursor: pointer; font-size: 12px; }
 body[data-pagina="inventario"] .boton-espera:hover { background: #d5ecdf; }
-body[data-pagina="inventario"] .notificacion-reposicion { padding: 20px 24px; margin-bottom: 30px; border: 1px solid #9bc9ba; border-left: 4px solid #367764; border-radius: 10px; background: #e9f4ef; overflow-wrap: anywhere; }
-body[data-pagina="inventario"] .notificacion-reposicion p { margin: 8px 0 0; font-size: 14px; }
-body[data-pagina="inventario"] .notificacion-reposicion p:last-child { font-size: 12px; color: var(--secundario); }
 @media (max-width: 700px) {
     body[data-pagina="inventario"] .seccion-esperas { padding: 20px 16px; scroll-margin-top: 95px; }
     body[data-pagina="inventario"] .cabecera-esperas { flex-direction: column; gap: 0; margin-bottom: 18px; }
     body[data-pagina="inventario"] .campos-espera { grid-template-columns: 1fr; }
-    body[data-pagina="inventario"] .notificacion-reposicion { padding: 18px 16px; }
 }
 
 /* Navegación entre inventario y apartado de compra. */
