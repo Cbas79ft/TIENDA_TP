@@ -19,7 +19,6 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from BACKEND.recomendaciones import cargar_popularidad, consultar_recomendados
-from BACKEND.stock import IndiceStock
 from BACKEND.transacciones import cargar_pila, registrar_transaccion, consultar_historial
 from BD import persistencia
 from BACKEND.inventario import cargar_inventario, consultar_producto, consultar_productos, agregar_producto, modificar_producto, eliminar_producto
@@ -29,14 +28,13 @@ from BACKEND.esperas import cargar_colas, consultar_esperas, registrar_espera
 class ManejadorTienda(SimpleHTTPRequestHandler):
     """Atiende consultas de la API y entrega archivos del frontend."""
 
-    def __init__(self, *args, inventario, colas, popularidad, bloqueo, pila=None, indice_stock=None, sesiones=None, **kwargs):
+    def __init__(self, *args, inventario, colas, popularidad, bloqueo, pila=None, sesiones=None, **kwargs):
         """Recibe inventario, colas y bloqueo compartidos entre solicitudes."""
         self.inventario = inventario
         self.colas = colas
         self.popularidad = popularidad
         self.bloqueo = bloqueo
         self.pila = pila
-        self.indice_stock = indice_stock
         self.sesiones = sesiones if sesiones is not None else {}
         super().__init__(*args, **kwargs)
 
@@ -50,7 +48,7 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
             self.end_headers()
             return
 
-        if ruta in ("/api/sesion", "/api/mis-reservas", "/api/mis-notificaciones", "/api/mis-compras", "/api/stock/minimo"):
+        if ruta in ("/api/sesion", "/api/mis-reservas", "/api/mis-notificaciones", "/api/mis-compras"):
             self.responder_portal_get(ruta)
             return
 
@@ -213,8 +211,6 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                     datos["cantidad_disponible"],
                     datos["precio"],
                 )
-                if self.indice_stock is not None:
-                    self.indice_stock.actualizar(self.inventario)
         except ValueError as error:
             self.responder_json(400, {"error": str(error)})
             return
@@ -302,8 +298,6 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                     datos["precio"],
                     colas=self.colas,
                 )
-                if self.indice_stock is not None:
-                    self.indice_stock.actualizar(self.inventario)
         except ValueError as error:
             self.responder_json(400, {"error": str(error)})
             return
@@ -346,8 +340,6 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
             #Usamos el mismo bloqueo que GET y POST.
             with self.bloqueo:
                 producto = eliminar_producto(self.inventario, id_producto)
-                if self.indice_stock is not None:
-                    self.indice_stock.actualizar(self.inventario)
         except sqlite3.IntegrityError:
             """
             Las claves foráneas impiden borrar un producto que ya figura
@@ -391,26 +383,23 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
         return cliente
 
     def responder_portal_get(self, ruta):
-        """Consulta reservas, avisos, compras o el mínimo del árbol de stock."""
+        """Consulta reservas, avisos y compras del cliente identificado."""
         try:
             with self.bloqueo:
-                if ruta == "/api/stock/minimo":
-                    resultado = self.indice_stock.consultar_minimo(self.inventario)
+                cliente = self.cliente_actual()
+                id_cliente = cliente["id_cliente"]
+                if ruta == "/api/sesion":
+                    resultado = cliente
+                elif ruta == "/api/mis-notificaciones":
+                    resultado = persistencia.leer_notificaciones(id_cliente)
+                elif ruta == "/api/mis-compras":
+                    resultado = [c for c in consultar_historial(self.pila) if c["id_cliente"] == id_cliente]
                 else:
-                    cliente = self.cliente_actual()
-                    id_cliente = cliente["id_cliente"]
-                    if ruta == "/api/sesion":
-                        resultado = cliente
-                    elif ruta == "/api/mis-notificaciones":
-                        resultado = persistencia.leer_notificaciones(id_cliente)
-                    elif ruta == "/api/mis-compras":
-                        resultado = [c for c in consultar_historial(self.pila) if c["id_cliente"] == id_cliente]
-                    else:
-                        resultado = []
-                        for producto in consultar_productos(self.inventario):
-                            for turno, espera in enumerate(consultar_esperas(self.colas, producto["id_producto"]), 1):
-                                if espera["id_cliente"] == id_cliente:
-                                    resultado.append({**espera, "nombre": producto["nombre"], "turno": turno})
+                    resultado = []
+                    for producto in consultar_productos(self.inventario):
+                        for turno, espera in enumerate(consultar_esperas(self.colas, producto["id_producto"]), 1):
+                            if espera["id_cliente"] == id_cliente:
+                                resultado.append({**espera, "nombre": producto["nombre"], "turno": turno})
             self.responder_json(200, resultado)
         except PermissionError as error:
             self.responder_json(401, {"error": str(error)})
@@ -441,8 +430,7 @@ class ManejadorTienda(SimpleHTTPRequestHandler):
                     else:
                         if set(datos) != {"productos"}:
                             raise ValueError("Enviá únicamente los productos y sus cantidades.")
-                        resultado = registrar_transaccion(self.inventario, self.pila, self.popularidad, self.indice_stock, cliente["id_cliente"], datos["productos"])
-                        resultado["menor_stock"] = self.indice_stock.consultar_minimo(self.inventario)
+                        resultado = registrar_transaccion(self.inventario, self.pila, self.popularidad, cliente["id_cliente"], datos["productos"])
             self.responder_json(201 if ruta == "/api/compras" else 200, resultado)
         except PermissionError as error:
             self.responder_json(401, {"error": str(error)})
@@ -500,7 +488,6 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
     colas = cargar_colas()
     popularidad = cargar_popularidad()
     pila = cargar_pila()
-    indice_stock = IndiceStock(inventario)
     sesiones = {}
     bloqueo = Lock()
 
@@ -511,7 +498,6 @@ def iniciar_servidor(host="127.0.0.1", puerto=8000):
         colas=colas,
         popularidad=popularidad,
         pila=pila,
-        indice_stock=indice_stock,
         sesiones=sesiones,
         bloqueo=bloqueo,
         directory=str(carpeta_frontend),

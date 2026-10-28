@@ -114,7 +114,7 @@ def cargar_pila():
     return pila
 
 
-def registrar_transaccion(inventario, pila, popularidad, indice_stock, id_cliente, productos):
+def registrar_transaccion(inventario, pila, popularidad, id_cliente, productos):
     """Registra una compra completa bajo el bloqueo compartido del servidor."""
     compra = preparar_compra(inventario, id_cliente, productos)
     compra['id_transaccion'] = persistencia.guardar_compra(compra)
@@ -122,12 +122,11 @@ def registrar_transaccion(inventario, pila, popularidad, indice_stock, id_client
     sincronizar_productos(inventario, ids)
     apilar(pila, compra)
     recomendaciones.registrar_compra(popularidad, compra['productos'])
-    indice_stock.actualizar(inventario)
     return deepcopy(compra)
 
 
-def deshacer_transaccion(inventario, colas, pila, popularidad, indice_stock, id_transaccion):
-    """Deshace la cima y restaura inventario, colas y árboles tras confirmar SQLite."""
+def deshacer_transaccion(inventario, colas, pila, popularidad, id_transaccion):
+    """Deshace la cima y restaura inventario, colas y popularidad tras confirmar SQLite."""
     ultima = consultar_ultima_transaccion(pila)
     if ultima['id_transaccion'] != id_transaccion:
         raise ValueError('La última compra cambió. Actualizá el historial.')
@@ -140,7 +139,6 @@ def deshacer_transaccion(inventario, colas, pila, popularidad, indice_stock, id_
         confirmar_atencion(colas, espera['id_producto'])
     desapilar(pila)
     recomendaciones.revertir_compra(popularidad, ultima['productos'])
-    indice_stock.actualizar(inventario)
     return {'transaccion': ultima, 'notificaciones': atendidas}
 
 
